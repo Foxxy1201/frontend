@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>PTC Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* ============================================
+   DESIGN: Dark Crypto / Futuristic Industrial
+   Font: Space Mono + Rajdhani
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg:        #0a0c10;
+  --surface:   #111520;
+  --surface2:  #181d2a;
+  --border:    #1e2535;
+  --accent:    #00e5ff;
+  --accent2:   #7c3aed;
+  --gold:      #f59e0b;
+  --green:     #10b981;
+  --red:       #ef4444;
+  --text:      #e2e8f0;
+  --muted:     #64748b;
+  --radius:    12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 15px;
+}
+
+/* ---- GRID BACKGROUND ---- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- PAGES ---- */
+.page { display: none; flex-direction: column; min-height: 100vh; padding: 0 0 80px; position: relative; z-index: 1; }
+.page.active { display: flex; }
+
+/* ---- HEADER ---- */
+.header {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10,12,16,0.9);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.header-badge {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  background: var(--surface2);
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+/* ---- BALANCE CARDS ---- */
+.balance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px;
+}
+.balance-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  position: relative;
+  overflow: hidden;
+}
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.balance-card.deposit::before { background: var(--accent2); }
+.balance-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.balance-amount {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  word-break: break-all;
+}
+.balance-card.deposit .balance-amount { color: var(--accent2); }
+.balance-unit {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* ---- BUTTONS ---- */
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+.btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.5px;
+}
+.btn:active { transform: scale(0.96); }
+.btn-icon { font-size: 18px; }
+
+.btn-primary   { background: linear-gradient(135deg, var(--accent), #0080ff); color: #000; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-danger    { background: linear-gradient(135deg, var(--red), #b91c1c); color: #fff; }
+.btn-success   { background: linear-gradient(135deg, var(--green), #059669); color: #fff; }
+.btn-purple    { background: linear-gradient(135deg, var(--accent2), #5b21b6); color: #fff; }
+.btn-gold      { background: linear-gradient(135deg, var(--gold), #d97706); color: #000; }
+.btn-full      { width: 100%; padding: 14px; font-size: 15px; flex-direction: row; justify-content: center; }
+
+/* ---- SECTION ---- */
+.section {
+  padding: 4px 16px 16px;
+}
+.section-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ---- AD CARD ---- */
+.ad-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.ad-card:active { background: var(--surface2); transform: scale(0.99); }
+.ad-card.viewed {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ad-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--green);
+}
+.ad-card.viewed::before { background: var(--muted); }
+
+.ad-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.ad-info { flex: 1; min-width: 0; }
+.ad-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.ad-reward {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 700;
+}
+.ad-status {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+}
+.ad-status.available  { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+.ad-status.viewed-tag { background: rgba(100,116,139,0.15); color: var(--muted); border: 1px solid var(--border); }
+
+/* ---- AD VIEWER ---- */
+.viewer-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  gap: 24px;
+}
+.viewer-ad-title {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  line-height: 1.3;
+}
+.timer-ring {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+.timer-ring svg {
+  transform: rotate(-90deg);
+}
+.timer-ring circle {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.timer-ring .bg  { stroke: var(--border); }
+.timer-ring .fg  { stroke: var(--accent); stroke-dasharray: 408; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+.timer-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+}
+.timer-num  { font-size: 36px; font-weight: 700; color: var(--accent); line-height: 1; }
+.timer-sub  { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+.viewer-reward-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 24px;
+  text-align: center;
+  width: 100%;
+}
+.viewer-reward-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.viewer-reward-amount {
+  font-family: 'Space Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green);
+  margin-top: 4px;
+}
+.viewer-reward-unit { font-size: 12px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+.viewer-open-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.viewer-open-btn:active { opacity: 0.7; }
+
+/* ---- FORM ---- */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: block;
+}
+.form-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 12px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--muted); }
+
+.form-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* ---- TOAST ---- */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%; transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.show { opacity: 1; }
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error   { border-color: var(--red);   color: var(--red);   }
+.toast.info    { border-color: var(--accent); color: var(--accent); }
+
+/* ---- BOTTOM NAV ---- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 68px;
+  background: rgba(17,21,32,0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: color 0.15s;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  background: none;
+}
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 20px; }
+
+/* ---- REFERRAL ---- */
+.ref-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.ref-code-display {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 4px;
+  margin: 8px 0;
+}
+.ref-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ref-stat {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+.ref-stat-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--green);
+}
+.ref-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ---- HISTORY ITEM ---- */
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.history-icon { font-size: 22px; }
+.history-info { flex: 1; }
+.history-label { font-weight: 600; font-size: 14px; }
+.history-sub   { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 2px; }
+.history-amount { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; text-align: right; }
+.status-pending  { color: var(--gold); }
+.status-approved { color: var(--green); }
+.status-rejected { color: var(--red); }
+
+/* ---- LOADING ---- */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+/* ---- SCROLLABLE ---- */
+.scroll-area { overflow-y: auto; flex: 1; }
+
+/* ---- CLAIMED ANIMATION ---- */
+@keyframes pulse-green {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  100% { box-shadow: 0 0 0 20px rgba(16,185,129,0); }
+}
+.claimed-pulse { animation: pulse-green 0.8s ease-out; }
+</style>
+</head>
+<body>
+
+<!-- ==========================================
+     TOAST
+     ========================================== -->
+<div class="toast" id="toast"></div>
+
+<!-- ==========================================
+     PAGE: DASHBOARD
+     ========================================== -->
+<div class="page active" id="page-dashboard">
+  <div class="header">
+    <span class="header-title">⚡ PTC App</span>
+    <span class="header-badge" id="hdr-username">@user</span>
+  </div>
+
+  <div class="balance-grid">
+    <div class="balance-card">
+      <div class="balance-label">Earning</div>
+      <div class="balance-amount" id="earn-bal">0.00000000</div>
+      <div class="balance-unit">USDT</div>
+    </div>
+    <div class="balance-card deposit">
+      <div class="balance-label">Deposit</div>
+      <div class="balance-amount" id="dep-bal">0.00000000</div>
+      <div class="balance-unit">USDT</div>
+    </div>
+  </div>
+
+  <div class="btn-grid">
+    <button class="btn btn-primary"   onclick="nav('ads')">
+      <span class="btn-icon">👁</span> Tonton
+    </button>
+    <button class="btn btn-secondary" onclick="nav('deposit')">
+      <span class="btn-icon">💳</span> Deposit
+    </button>
+    <button class="btn btn-secondary" onclick="nav('withdraw')">
+      <span class="btn-icon">💸</span> Withdraw
+    </button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Aksi Cepat</div>
+    <button class="btn btn-purple btn-full" style="margin-bottom:8px" onclick="nav('create-ad')">
+      <span class="btn-icon">📢</span>&nbsp; Pasang Iklan
+    </button>
+    <button class="btn btn-gold btn-full" onclick="nav('referral')">
+      <span class="btn-icon">🔗</span>&nbsp; Referral
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================
+     PAGE: ADS LIST
+     ========================================== -->
+<div class="page" id="page-ads">
+  <div class="header">
+    <span class="header-title">👁 Iklan Tersedia</span>
+    <button class="header-badge" onclick="loadAds()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px">↻ Refresh</button>
+  </div>
+  <div class="scroll-area" id="ads-list">
+    <div class="loading"><div class="spinner"></div>Memuat iklan...</div>
+  </div>
+</div>
+
+<!-- ==========================================
+     PAGE: AD VIEWER
+     ========================================== -->
+<div class="page" id="page-viewer">
+  <div class="header">
+    <button onclick="nav('ads')" style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer">←</button>
+    <span class="header-title">Sedang Ditonton</span>
+    <span></span>
+  </div>
+  <div class="viewer-container">
+    <div class="viewer-ad-title" id="viewer-title">Judul Iklan</div>
+
+    <a class="viewer-open-btn" id="viewer-link" href="#" target="_blank" rel="noopener">
+      🔗 Buka Halaman Iklan
+    </a>
+
+    <div class="timer-ring">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle class="bg" cx="70" cy="70" r="65"/>
+        <circle class="fg" id="timer-circle" cx="70" cy="70" r="65"/>
+      </svg>
+      <div class="timer-text">
+        <div class="timer-num" id="timer-num">30</div>
+        <div class="timer-sub">detik</div>
+      </div>
+    </div>
+
+    <div class="viewer-reward-box">
+      <div class="viewer-reward-label">Reward Kamu</div>
+      <div class="viewer-reward-amount" id="viewer-reward">+0.00050000</div>
+      <div class="viewer-reward-unit">USDT</div>
+    </div>
+
+    <button class="btn btn-success btn-full" id="claim-btn" onclick="claimReward()" style="display:none">
+      ✅ Claim Reward
+    </button>
+    <div id="claim-info" style="font-size:12px;color:var(--muted);text-align:center">
+      Tunggu timer selesai untuk klaim...
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     PAGE: DEPOSIT
+     ========================================== -->
+<div class="page" id="page-deposit">
+  <div class="header">
+    <span class="header-title">💳 Deposit</span>
+  </div>
+  <div class="scroll-area" style="padding:16px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:8px">Alamat Wallet BEP-20</div>
+      <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);word-break:break-all;line-height:1.6" id="deposit-wallet-addr">0x...</div>
+      <button class="btn btn-secondary" style="margin-top:10px;padding:8px 12px;font-size:12px" onclick="copyWallet()">📋 Copy Alamat</button>
+    </div>
+
+    <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--gold)">
+      ⚠️ Pastikan jaringan <b>BNB Smart Chain (BEP-20)</b>! Jangan kirim dari chain lain.
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Jumlah USDT yang Dikirim</label>
+      <input class="form-input" type="number" id="dep-amount" placeholder="contoh: 10" step="0.01" min="1"/>
+      <div class="form-hint">Minimum 1 USDT</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">TXID / Hash Transaksi</label>
+      <input class="form-input" type="text" id="dep-txid" placeholder="0x..."/>
+      <div class="form-hint">Bisa dicek di BSCScan</div>
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="submitDeposit()">
+      📤 Submit Deposit
+    </button>
+
+    <div class="section-title" style="margin-top:24px">Riwayat Deposit</div>
+    <div id="dep-history"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<!-- ==========================================
+     PAGE: WITHDRAW
+     ========================================== -->
+<div class="page" id="page-withdraw">
+  <div class="header">
+    <span class="header-title">💸 Withdraw</span>
+  </div>
+  <div class="scroll-area" style="padding:16px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+      <div class="balance-label">Earning Balance</div>
+      <div class="balance-amount" id="wd-earn-bal" style="font-size:20px">0.00000000</div>
+      <div class="balance-unit">USDT</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Jumlah Withdraw (USDT)</label>
+      <input class="form-input" type="number" id="wd-amount" placeholder="Minimum 1 USDT" step="0.01" min="1"/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Alamat Wallet BEP-20 Tujuan</label>
+      <input class="form-input" type="text" id="wd-address" placeholder="0x..."/>
+    </div>
+
+    <button class="btn btn-success btn-full" onclick="submitWithdraw()">
+      💸 Ajukan Withdraw
+    </button>
+
+    <div class="section-title" style="margin-top:24px">Riwayat Withdraw</div>
+    <div id="wd-history"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<!-- ==========================================
+     PAGE: CREATE AD (Advertiser)
+     ========================================== -->
+<div class="page" id="page-create-ad">
+  <div class="header">
+    <span class="header-title">📢 Pasang Iklan</span>
+  </div>
+  <div class="scroll-area" style="padding:16px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+      <div class="balance-label">Deposit Balance</div>
+      <div class="balance-amount" id="ad-dep-bal" style="font-size:20px;color:var(--accent2)">0.00000000</div>
+      <div class="balance-unit">USDT</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Judul Iklan</label>
+      <input class="form-input" type="text" id="ad-title" placeholder="Nama / judul iklan kamu"/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">URL Tujuan</label>
+      <input class="form-input" type="url" id="ad-url" placeholder="https://..."/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Jumlah Klik</label>
+      <input class="form-input" type="number" id="ad-clicks" placeholder="Minimum 1000" min="1000" step="100"
+             oninput="calcAdPrice()"/>
+      <div class="form-hint">Harga per klik: 0.002 USDT | Reward user: 0.0005 USDT</div>
+    </div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="color:var(--muted);font-size:13px">Total Biaya</span>
+        <span id="ad-price-display" style="font-family:'Space Mono',monospace;color:var(--gold);font-weight:700">-</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted);font-size:13px">Total Reward Dibagi</span>
+        <span id="ad-reward-display" style="font-family:'Space Mono',monospace;color:var(--green);font-weight:700">-</span>
+      </div>
+    </div>
+
+    <button class="btn btn-purple btn-full" onclick="submitCreateAd()">
+      🚀 Buat Iklan
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================
+     PAGE: REFERRAL
+     ========================================== -->
+<div class="page" id="page-referral">
+  <div class="header">
+    <span class="header-title">🔗 Referral</span>
+  </div>
+  <div class="scroll-area" style="padding:16px">
+    <div class="ref-box">
+      <div class="balance-label">Kode Referral Kamu</div>
+      <div class="ref-code-display" id="ref-code">--------</div>
+      <button class="btn btn-secondary" style="padding:8px 12px;font-size:12px" onclick="copyRef()">📋 Copy Link Referral</button>
+    </div>
+
+    <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.6">
+      💡 Setiap user yang daftar via link kamu dan klik iklan,<br/>
+      kamu dapat <b style="color:var(--green)">10% dari reward</b> mereka secara otomatis!
+    </div>
+
+    <div class="ref-stats-grid">
+      <div class="ref-stat">
+        <div class="ref-stat-val" id="ref-total">0</div>
+        <div class="ref-stat-lbl">Total Referral</div>
+      </div>
+      <div class="ref-stat">
+        <div class="ref-stat-val" id="ref-earned">0.00000000</div>
+        <div class="ref-stat-lbl">Total Komisi (USDT)</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:16px">Daftar Referral</div>
+    <div id="ref-list"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<!-- ==========================================
+     BOTTOM NAV
+     ========================================== -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-dashboard" onclick="nav('dashboard')">
+    <span class="nav-icon">🏠</span>Home
+  </button>
+  <button class="nav-item" id="nav-ads" onclick="nav('ads')">
+    <span class="nav-icon">👁</span>Iklan
+  </button>
+  <button class="nav-item" id="nav-deposit" onclick="nav('deposit')">
+    <span class="nav-icon">💳</span>Deposit
+  </button>
+  <button class="nav-item" id="nav-withdraw" onclick="nav('withdraw')">
+    <span class="nav-icon">💸</span>Withdraw
+  </button>
+  <button class="nav-item" id="nav-referral" onclick="nav('referral')">
+    <span class="nav-icon">🔗</span>Referral
+  </button>
+</nav>
+
+<!-- ==========================================
+     JAVASCRIPT
+     ========================================== -->
+<script>
+// ============================================
+// CONFIG - GANTI INI
+// ============================================
+const API_BASE = 'https://any-microwave-default-parental.trycloudflare.com'; // ← ganti URL Cloudflare Tunnel lo
+
+// ============================================
+// STATE
+// ============================================
+let state = {
+  telegramId:   null,
+  username:     null,
+  user:         null,
+  sessionToken: null,
+  currentAd:    null,
+  timerInterval: null,
+};
+
+// ============================================
+// TELEGRAM MINI APP INIT
+// ============================================
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#0a0c10');
+  tg.setBackgroundColor('#0a0c10');
+}
+
+// Ambil telegram_id dari query param atau dari Telegram WebApp
+function getTelegramId() {
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get('tgid');
+  if (fromUrl) return fromUrl;
+
+  // Dari Telegram initDataUnsafe
+  if (tg?.initDataUnsafe?.user?.id) {
+    return String(tg.initDataUnsafe.user.id);
+  }
+  return null;
+}
+
+// ============================================
+// APP INIT
+// ============================================
+async function init() {
+  const tgId = getTelegramId();
+
+  if (!tgId) {
+    showToast('Buka dari Telegram Bot ya!', 'error');
+    return;
+  }
+
+  state.telegramId = tgId;
+  state.username   = tg?.initDataUnsafe?.user?.username || 'user';
+
+  const deviceId = getDeviceId();
+
+  // Register / get user
+  const res = await apiPost('/api/users/register', {
+    telegram_id:   tgId,
+    username:      state.username,
+    device_id:     deviceId,
+    referral_code: new URLSearchParams(window.location.search).get('ref') || undefined,
+  });
+
+  if (!res) {
+    showToast('Tidak bisa konek server', 'error');
+    return;
+  }
+  if (res.error) {
+    showToast(res.error, 'error');
+    return;
+  }
+
+  state.user = res.user;
+  updateDashboard();
+  loadDepositWallet();
+}
+
+// ============================================
+// DEVICE ID: persistent via localStorage
+// ============================================
+function getDeviceId() {
+  let id = localStorage.getItem('ptc_did');
+  if (!id) {
+    id = 'web_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('ptc_did', id);
+  }
+  return id;
+}
+
+// ============================================
+// API HELPERS
+// ============================================
+async function apiGet(path, params = {}) {
+  try {
+    const qs  = new URLSearchParams(params).toString();
+    const url = `${API_BASE}${path}${qs ? '?' + qs : ''}`;
+    const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+    return await res.json();
+  } catch (e) {
+    console.error('GET error', path, e);
+    return null;
+  }
+}
+
+async function apiPost(path, body = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('POST error', path, e);
+    return null;
+  }
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+const PAGE_MAP = {
+  'dashboard': 'page-dashboard',
+  'ads':       'page-ads',
+  'viewer':    'page-viewer',
+  'deposit':   'page-deposit',
+  'withdraw':  'page-withdraw',
+  'create-ad': 'page-create-ad',
+  'referral':  'page-referral',
+};
+const NAV_PAGES = ['dashboard','ads','deposit','withdraw','referral'];
+
+function nav(page) {
+  // Hide all
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  // Show target
+  const el = document.getElementById(PAGE_MAP[page]);
+  if (el) el.classList.add('active');
+
+  // Activate nav
+  const navEl = document.getElementById(`nav-${page}`);
+  if (navEl) navEl.classList.add('active');
+
+  // Lazy load data
+  if (page === 'ads')      loadAds();
+  if (page === 'deposit')  { loadDepositHistory(); updateWdBalance(); }
+  if (page === 'withdraw') { loadWithdrawHistory(); updateWdBalance(); }
+  if (page === 'create-ad') updateAdDepBal();
+  if (page === 'referral')  loadReferral();
+
+  window.scrollTo(0, 0);
+}
+
+// ============================================
+// DASHBOARD
+// ============================================
+function updateDashboard() {
+  if (!state.user) return;
+  document.getElementById('hdr-username').textContent = '@' + (state.user.username || 'user');
+  document.getElementById('earn-bal').textContent = parseFloat(state.user.earning_balance).toFixed(8);
+  document.getElementById('dep-bal').textContent  = parseFloat(state.user.deposit_balance).toFixed(8);
+}
+
+async function refreshUser() {
+  const res = await apiGet(`/api/users/${state.telegramId}`);
+  if (res?.user) {
+    state.user = res.user;
+    updateDashboard();
+  }
+}
+
+// ============================================
+// ADS LIST
+// ============================================
+async function loadAds() {
+  const container = document.getElementById('ads-list');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat iklan...</div>';
+
+  const res = await apiGet('/api/ads', { telegram_id: state.telegramId });
+  if (!res || res.error) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>${res?.error || 'Gagal memuat iklan'}</div>`;
+    return;
+  }
+
+  const ads = res.ads || [];
+  if (ads.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Belum ada iklan tersedia</div>';
+    return;
+  }
+
+  container.innerHTML = '<div style="padding:12px 16px">' + ads.map(ad => `
+    <div class="ad-card ${ad.already_viewed ? 'viewed' : ''}"
+         onclick="${ad.already_viewed ? '' : `startView(${ad.id},'${escHtml(ad.title)}','${escHtml(ad.url)}',${ad.reward_per_click})`}">
+      <div class="ad-icon">📢</div>
+      <div class="ad-info">
+        <div class="ad-title">${escHtml(ad.title)}</div>
+        <div class="ad-reward">+${parseFloat(ad.reward_per_click).toFixed(8)} USDT</div>
+      </div>
+      <div class="ad-status ${ad.already_viewed ? 'viewed-tag' : 'available'}">
+        ${ad.already_viewed ? '✓ Sudah' : 'Tonton'}
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
+// ============================================
+// AD VIEWER
+// ============================================
+async function startView(adId, title, url, reward) {
+  // Step 1: POST /ads/view → dapat session_token
+  const res = await apiPost('/api/ads/view', {
+    telegram_id: state.telegramId,
+    ad_id: adId,
+  });
+
+  if (!res || res.error) {
+    showToast(res?.error || 'Gagal mulai tonton', 'error');
+    return;
+  }
+
+  state.sessionToken = res.session_token;
+  state.currentAd    = { id: adId, title, url, reward };
+
+  // Setup viewer UI
+  document.getElementById('viewer-title').textContent   = title;
+  document.getElementById('viewer-reward').textContent  = `+${parseFloat(reward).toFixed(8)}`;
+  document.getElementById('viewer-link').href           = url;
+  document.getElementById('claim-btn').style.display    = 'none';
+  document.getElementById('claim-info').textContent     = 'Tunggu timer selesai untuk klaim...';
+
+  nav('viewer');
+  startTimer(res.watch_seconds || 30);
+}
+
+function startTimer(seconds) {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+
+  const circle    = document.getElementById('timer-circle');
+  const numEl     = document.getElementById('timer-num');
+  const circumference = 2 * Math.PI * 65; // r=65
+  circle.style.strokeDasharray  = circumference;
+  circle.style.strokeDashoffset = 0;
+
+  let remaining = seconds;
+  numEl.textContent = remaining;
+
+  state.timerInterval = setInterval(() => {
+    remaining--;
+    numEl.textContent = remaining;
+
+    const progress = (seconds - remaining) / seconds;
+    circle.style.strokeDashoffset = circumference * (1 - progress);
+
+    if (remaining <= 0) {
+      clearInterval(state.timerInterval);
+      document.getElementById('claim-btn').style.display  = 'flex';
+      document.getElementById('claim-info').textContent   = '✅ Timer selesai! Klaim reward kamu.';
+      circle.style.stroke = 'var(--green)';
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    }
+  }, 1000);
+}
+
+async function claimReward() {
+  const btn = document.getElementById('claim-btn');
+  btn.textContent = '⏳ Memproses...';
+  btn.disabled    = true;
+
+  const res = await apiPost('/api/ads/claim', {
+    telegram_id:   state.telegramId,
+    session_token: state.sessionToken,
+  });
+
+  btn.disabled = false;
+
+  if (!res || res.error) {
+    showToast(res?.error || 'Gagal claim', 'error');
+    btn.textContent = '✅ Claim Reward';
+    return;
+  }
+
+  // Success
+  btn.style.display = 'none';
+  document.getElementById('claim-info').textContent = '🎉 Reward berhasil diklaim!';
+  showToast(`+${parseFloat(res.reward).toFixed(8)} USDT ditambahkan!`, 'success');
+
+  if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+  // Refresh user balance
+  await refreshUser();
+
+  setTimeout(() => nav('ads'), 2000);
+}
+
+// ============================================
+// DEPOSIT
+// ============================================
+async function loadDepositWallet() {
+  // Ambil dari config atau hardcode di sini
+  const walletEl = document.getElementById('deposit-wallet-addr');
+  // Bisa diambil dari API juga: GET /api/config/deposit_wallet
+  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8'; // diganti pas deploy
+}
+
+function copyWallet() {
+  const addr = document.getElementById('deposit-wallet-addr').textContent;
+  navigator.clipboard.writeText(addr).then(() => showToast('Alamat wallet disalin!', 'success'));
+}
+
+async function submitDeposit() {
+  const amount = document.getElementById('dep-amount').value.trim();
+  const txid   = document.getElementById('dep-txid').value.trim();
+
+  if (!amount || !txid) {
+    showToast('Isi semua field dulu', 'error');
+    return;
+  }
+
+  const res = await apiPost('/api/deposits', {
+    telegram_id: state.telegramId,
+    amount:      parseFloat(amount),
+    txid,
+  });
+
+  if (!res || res.error) {
+    showToast(res?.error || 'Gagal submit deposit', 'error');
+    return;
+  }
+
+  showToast('Deposit disubmit! Tunggu konfirmasi admin.', 'success');
+  document.getElementById('dep-amount').value = '';
+  document.getElementById('dep-txid').value   = '';
+  loadDepositHistory();
+}
+
+async function loadDepositHistory() {
+  const el = document.getElementById('dep-history');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const res = await apiGet('/api/deposits', { telegram_id: state.telegramId });
+  const deps = res?.deposits || [];
+
+  if (deps.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat deposit</div>';
+    return;
+  }
+
+  el.innerHTML = deps.map(d => `
+    <div class="history-item">
+      <div class="history-icon">💳</div>
+      <div class="history-info">
+        <div class="history-label">${parseFloat(d.amount).toFixed(4)} USDT</div>
+        <div class="history-sub">${d.txid.slice(0,10)}...${d.txid.slice(-6)}</div>
+      </div>
+      <div class="history-amount status-${d.status}">${d.status}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// WITHDRAW
+// ============================================
+function updateWdBalance() {
+  if (state.user) {
+    document.getElementById('wd-earn-bal').textContent = parseFloat(state.user.earning_balance).toFixed(8);
+  }
+}
+
+async function submitWithdraw() {
+  const amount  = document.getElementById('wd-amount').value.trim();
+  const address = document.getElementById('wd-address').value.trim();
+
+  if (!amount || !address) {
+    showToast('Isi semua field dulu', 'error');
+    return;
+  }
+
+  const res = await apiPost('/api/withdrawals', {
+    telegram_id: state.telegramId,
+    amount:      parseFloat(amount),
+    address,
+  });
+
+  if (!res || res.error) {
+    showToast(res?.error || 'Gagal submit withdraw', 'error');
+    return;
+  }
+
+  showToast('Withdraw disubmit! Proses 1x24 jam.', 'success');
+  document.getElementById('wd-amount').value  = '';
+  document.getElementById('wd-address').value = '';
+  await refreshUser();
+  updateWdBalance();
+  loadWithdrawHistory();
+}
+
+async function loadWithdrawHistory() {
+  const el = document.getElementById('wd-history');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const res = await apiGet('/api/withdrawals', { telegram_id: state.telegramId });
+  const wds = res?.withdrawals || [];
+
+  if (wds.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat withdraw</div>';
+    return;
+  }
+
+  el.innerHTML = wds.map(w => `
+    <div class="history-item">
+      <div class="history-icon">💸</div>
+      <div class="history-info">
+        <div class="history-label">${parseFloat(w.amount).toFixed(4)} USDT</div>
+        <div class="history-sub">${w.address.slice(0,10)}...${w.address.slice(-6)}</div>
+      </div>
+      <div class="history-amount status-${w.status}">${w.status}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// CREATE AD
+// ============================================
+function updateAdDepBal() {
+  if (state.user) {
+    document.getElementById('ad-dep-bal').textContent = parseFloat(state.user.deposit_balance).toFixed(8);
+  }
+}
+
+function calcAdPrice() {
+  const clicks = parseInt(document.getElementById('ad-clicks').value) || 0;
+  const price  = (clicks * 0.002).toFixed(8);
+  const reward = (clicks * 0.0005).toFixed(8);
+  document.getElementById('ad-price-display').textContent  = clicks > 0 ? `${price} USDT` : '-';
+  document.getElementById('ad-reward-display').textContent = clicks > 0 ? `${reward} USDT` : '-';
+}
+
+async function submitCreateAd() {
+  const title  = document.getElementById('ad-title').value.trim();
+  const url    = document.getElementById('ad-url').value.trim();
+  const clicks = parseInt(document.getElementById('ad-clicks').value);
+
+  if (!title || !url || !clicks) {
+    showToast('Isi semua field dulu', 'error');
+    return;
+  }
+  if (clicks < 1000) {
+    showToast('Minimum 1000 klik', 'error');
+    return;
+  }
+
+  const res = await apiPost('/api/ads/create', {
+    telegram_id:  state.telegramId,
+    title, url,
+    total_clicks: clicks,
+  });
+
+  if (!res || res.error) {
+    showToast(res?.error || 'Gagal buat iklan', 'error');
+    return;
+  }
+
+  showToast('Iklan berhasil dibuat! 🎉', 'success');
+  document.getElementById('ad-title').value  = '';
+  document.getElementById('ad-url').value    = '';
+  document.getElementById('ad-clicks').value = '';
+  calcAdPrice();
+  await refreshUser();
+  updateAdDepBal();
+}
+
+// ============================================
+// REFERRAL
+// ============================================
+async function loadReferral() {
+  if (!state.user) return;
+
+  const code = state.user.referral_code;
+  document.getElementById('ref-code').textContent = code;
+
+  const el = document.getElementById('ref-list');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const res = await apiGet(`/api/users/${state.telegramId}/referrals`);
+  if (!res) {
+    el.innerHTML = '<div class="empty">Gagal memuat data</div>';
+    return;
+  }
+
+  document.getElementById('ref-total').textContent  = res.total_referrals || 0;
+  document.getElementById('ref-earned').textContent = parseFloat(res.total_earned || 0).toFixed(8);
+
+  const refs = res.referrals || [];
+  if (refs.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>Belum ada referral</div>';
+    return;
+  }
+
+  el.innerHTML = refs.map(r => `
+    <div class="history-item">
+      <div class="history-icon">👤</div>
+      <div class="history-info">
+        <div class="history-label">@${r.username || 'user'}</div>
+        <div class="history-sub">${r.total_klik || 0} klik</div>
+      </div>
+      <div class="history-amount" style="color:var(--green)">
+        +${parseFloat(r.komisi_dari_user || 0).toFixed(8)}
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyRef() {
+  const code = state.user?.referral_code;
+  if (!code) return;
+  // Ganti BOT_USERNAME dengan username bot lo
+  const link = `https://t.me/ptcearning_bot?start=${code}`;
+  navigator.clipboard.writeText(link).then(() => showToast('Link referral disalin!', 'success'));
+}
+
+// ============================================
+// TOAST
+// ============================================
+let toastTimeout;
+function showToast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent  = msg;
+  el.className    = `toast ${type} show`;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+// ============================================
+// START
+// ============================================
+init();
+</script>
+</body>
+</html>
