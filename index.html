@@ -74,6 +74,10 @@
       <span class="btn-icon">🔗</span>&nbsp;
       <span id="btn-referral-text">Referral</span>
     </button>
+    <button class="btn btn-full" style="margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff" onclick="nav('my-ads')">
+      <span class="btn-icon">📊</span>&nbsp;
+      <span id="btn-my-ads-text">Statistik Iklan Saya</span>
+    </button>
   </div>
 </div>
 
@@ -191,13 +195,36 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="wd-amount-lbl">Jumlah Withdraw (USDT)</label>
-      <input class="form-input" type="number" id="wd-amount" placeholder="Minimum 1 USDT" step="0.01" min="1"/>
+      <label class="form-label" id="wd-method-lbl">Metode Withdraw</label>
+      <select class="form-input" id="wd-method" onchange="onMethodChange()">
+        <option value="">Memuat metode...</option>
+      </select>
+      <div class="form-hint" id="wd-method-desc"></div>
+    </div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px" id="wd-fee-info" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:var(--muted)" id="wd-min-lbl">Minimum</span>
+        <span id="wd-min-val" style="color:var(--accent)">-</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:var(--muted)" id="wd-fee-lbl">Fee</span>
+        <span id="wd-fee-val" style="color:var(--gold)">-</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)" id="wd-received-lbl">Kamu Terima</span>
+        <span id="wd-received-val" style="color:var(--green);font-weight:700">-</span>
+      </div>
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="wd-addr-lbl">Alamat Wallet BEP-20 Tujuan</label>
-      <input class="form-input" type="text" id="wd-address" placeholder="0x..."/>
+      <label class="form-label" id="wd-amount-lbl">Jumlah Withdraw</label>
+      <input class="form-input" type="number" id="wd-amount" placeholder="Minimum 1" step="0.01" min="0.01" oninput="calcWdReceived()"/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" id="wd-addr-lbl">Alamat / Nomor Tujuan</label>
+      <input class="form-input" type="text" id="wd-address" placeholder="0x... / 08xxx"/>
     </div>
 
     <button class="btn btn-success btn-full" id="wd-submit-btn" onclick="submitWithdraw()">💸 Ajukan Withdraw</button>
@@ -290,6 +317,21 @@
 
     <div class="section-title" style="margin-top:16px" id="referral-list-title">Daftar Referral</div>
     <div id="ref-list"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+
+<!-- ==========================================
+     PAGE: MY ADS (Statistik Iklan)
+     ========================================== -->
+<div class="page" id="page-my-ads">
+  <div class="header">
+    <button onclick="nav('dashboard')" style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer">←</button>
+    <span class="header-title" id="my-ads-page-title">📊 Statistik Iklan</span>
+    <button onclick="loadMyAds()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer">↻</button>
+  </div>
+  <div class="scroll-area" id="my-ads-list">
+    <div class="loading"><div class="spinner"></div></div>
   </div>
 </div>
 

@@ -9,6 +9,7 @@ const PAGE_MAP = {
   'withdraw':  'page-withdraw',
   'create-ad': 'page-create-ad',
   'referral':  'page-referral',
+  'my-ads':    'page-my-ads',
 };
 const NAV_PAGES = ['dashboard', 'ads', 'deposit', 'withdraw', 'referral'];
 
@@ -28,6 +29,8 @@ function nav(page) {
   if (page === 'withdraw')  { loadWithdrawHistory(); updateWdBalance(); }
   if (page === 'create-ad') updateAdDepBal();
   if (page === 'referral')  loadReferral();
+  if (page === 'my-ads')    loadMyAds();
+  if (page === 'withdraw')  loadWithdrawMethods();
 
   window.scrollTo(0, 0);
 }
@@ -330,11 +333,20 @@ function updateWdBalance() {
 }
 
 async function submitWithdraw() {
-  const amount  = document.getElementById('wd-amount').value.trim();
-  const address = document.getElementById('wd-address').value.trim();
+  const amount    = document.getElementById('wd-amount').value.trim();
+  const address   = document.getElementById('wd-address').value.trim();
+  const methodSel = document.getElementById('wd-method');
+  const method_id = parseInt(methodSel?.value) || null;
+  const method    = wdMethods.find(m => m.id === method_id);
 
   if (!amount || !address) {
     showToast(t('toast_fill_fields'), 'error');
+    return;
+  }
+
+  const minAmt = method ? parseFloat(method.min_amount) : 1;
+  if (parseFloat(amount) < minAmt) {
+    showToast(`Minimum withdraw ${minAmt} untuk metode ini`, 'error');
     return;
   }
 
@@ -342,6 +354,7 @@ async function submitWithdraw() {
     telegram_id: state.telegramId,
     amount:      parseFloat(amount),
     address,
+    method_id,
   });
 
   if (!res || res.error) {
@@ -479,6 +492,137 @@ function copyRef() {
   // Ganti ptcearning_bot dengan username bot lo
   const link = `https://t.me/ptcearning_bot?start=${code}`;
   navigator.clipboard.writeText(link).then(() => showToast(t('toast_copied'), 'success'));
+}
+
+
+// ============================================
+// MY ADS - Statistik Iklan User
+// ============================================
+async function loadMyAds() {
+  const el = document.getElementById('my-ads-list');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const res = await apiGet('/api/ads/my', { telegram_id: state.telegramId });
+  const ads = res?.ads || [];
+
+  if (ads.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📢</div>${t('my_ads_empty')}</div>`;
+    return;
+  }
+
+  el.innerHTML = '<div style="padding:12px 16px">' + ads.map(ad => {
+    const done    = ad.total_clicks - ad.remaining_clicks;
+    const pct     = ad.total_clicks > 0 ? Math.round((done / ad.total_clicks) * 100) : 0;
+    const barColor = pct >= 100 ? 'var(--green)' : 'var(--accent)';
+    const statusColor = ad.status === 'active' ? 'var(--green)' : ad.status === 'paused' ? 'var(--gold)' : 'var(--muted)';
+
+    return `
+    <div class="card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:600;color:var(--text);flex:1;margin-right:8px">${escHtml(ad.title)}</div>
+        <div style="font-size:11px;font-weight:700;color:${statusColor};background:${statusColor}22;padding:2px 8px;border-radius:20px;white-space:nowrap">${ad.status.toUpperCase()}</div>
+      </div>
+
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;word-break:break-all">${escHtml(ad.url)}</div>
+
+      <div style="background:var(--surface2);border-radius:6px;height:6px;margin-bottom:8px;overflow:hidden">
+        <div style="background:${barColor};height:100%;width:${pct}%;transition:width 0.5s;border-radius:6px"></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:10px">
+        <span style="color:var(--muted)">${t('my_ads_clicks')}</span>
+        <span style="color:var(--accent);font-weight:700">${done} / ${ad.total_clicks} (${pct}%)</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${t('my_ads_reward_per_click')}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--green)">${parseFloat(ad.reward_per_click).toFixed(4)}</div>
+          <div style="font-size:10px;color:var(--muted)">USDT</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${t('my_ads_total_spent')}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--gold)">${(done * parseFloat(ad.reward_per_click)).toFixed(4)}</div>
+          <div style="font-size:10px;color:var(--muted)">USDT</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">📅 ${new Date(ad.created_at).toLocaleDateString('id-ID')}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ============================================
+// WITHDRAW METHODS
+// ============================================
+let wdMethods = [];
+
+async function loadWithdrawMethods() {
+  const res = await apiGet('/api/withdrawals/methods');
+  wdMethods = res?.methods || [];
+
+  const sel = document.getElementById('wd-method');
+  if (!sel) return;
+
+  if (wdMethods.length === 0) {
+    sel.innerHTML = '<option value="">Tidak ada metode tersedia</option>';
+    return;
+  }
+
+  sel.innerHTML = wdMethods.map(m =>
+    `<option value="${m.id}">${m.name}</option>`
+  ).join('');
+
+  onMethodChange();
+}
+
+function onMethodChange() {
+  const sel = document.getElementById('wd-method');
+  const methodId = parseInt(sel?.value);
+  const method = wdMethods.find(m => m.id === methodId);
+  if (!method) return;
+
+  // Update address label & placeholder
+  const addrLbl = document.getElementById('wd-addr-lbl');
+  const addrInp = document.getElementById('wd-address');
+  if (addrLbl) addrLbl.textContent = method.address_label;
+  if (addrInp) addrInp.placeholder = method.address_placeholder;
+
+  // Update desc
+  const desc = document.getElementById('wd-method-desc');
+  if (desc) desc.textContent = method.description || '';
+
+  // Update min
+  const minVal = document.getElementById('wd-min-val');
+  if (minVal) minVal.textContent = `${parseFloat(method.min_amount).toFixed(2)}`;
+
+  // Update fee display
+  const feeVal = document.getElementById('wd-fee-val');
+  if (feeVal) {
+    if (method.fee_type === 'fixed') {
+      feeVal.textContent = parseFloat(method.fee_value) > 0 ? `${parseFloat(method.fee_value).toFixed(4)}` : 'Gratis';
+    } else {
+      feeVal.textContent = parseFloat(method.fee_value) > 0 ? `${parseFloat(method.fee_value)}%` : 'Gratis';
+    }
+  }
+
+  calcWdReceived();
+}
+
+function calcWdReceived() {
+  const sel = document.getElementById('wd-method');
+  const methodId = parseInt(sel?.value);
+  const method = wdMethods.find(m => m.id === methodId);
+  const amt = parseFloat(document.getElementById('wd-amount')?.value) || 0;
+  const el  = document.getElementById('wd-received-val');
+  if (!el || !method) return;
+
+  let fee = 0;
+  if (method.fee_type === 'fixed') fee = parseFloat(method.fee_value);
+  else fee = amt * (parseFloat(method.fee_value) / 100);
+
+  const received = Math.max(0, amt - fee);
+  el.textContent = received > 0 ? `${received.toFixed(4)}` : '-';
 }
 
 // ============================================
