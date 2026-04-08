@@ -801,7 +801,7 @@ body::before {
 // ============================================
 // CONFIG - GANTI INI
 // ============================================
-const API_BASE = 'https://wheel-agrees-contrary-retain.trycloudflare.com'; // ← ganti URL Cloudflare Tunnel lo
+const API_BASE = 'https://classified-idle-supposed-frost.trycloudflare.com'; // ← ganti URL Cloudflare Tunnel lo
 
 // ============================================
 // STATE
@@ -813,6 +813,8 @@ let state = {
   sessionToken: null,
   currentAd:    null,
   timerInterval: null,
+  watchSeconds:  30,
+  timerCancelled: false,
 };
 
 // ============================================
@@ -1011,7 +1013,6 @@ async function loadAds() {
 // AD VIEWER
 // ============================================
 async function startView(adId, title, url, reward) {
-  // Step 1: POST /ads/view → dapat session_token
   const res = await apiPost('/api/ads/view', {
     telegram_id: state.telegramId,
     ad_id: adId,
@@ -1022,47 +1023,95 @@ async function startView(adId, title, url, reward) {
     return;
   }
 
-  state.sessionToken = res.session_token;
-  state.currentAd    = { id: adId, title, url, reward };
+  state.sessionToken   = res.session_token;
+  state.currentAd      = { id: adId, title, url, reward };
+  state.watchSeconds   = res.watch_seconds || 30;
+  state.timerCancelled = false;
 
-  // Setup viewer UI
-  document.getElementById('viewer-title').textContent   = title;
-  document.getElementById('viewer-reward').textContent  = `+${parseFloat(reward).toFixed(8)}`;
-  document.getElementById('viewer-link').href           = url;
-  document.getElementById('claim-btn').style.display    = 'none';
-  document.getElementById('claim-info').textContent     = 'Tunggu timer selesai untuk klaim...';
+  // Buka link iklan di tab baru
+  window.open(url, '_blank');
 
+  // Langsung mulai timer di webapp (tidak perlu pindah halaman viewer dulu)
   nav('viewer');
-  startTimer(res.watch_seconds || 30);
+
+  document.getElementById('viewer-title').textContent  = title;
+  document.getElementById('viewer-reward').textContent = `+${parseFloat(reward).toFixed(8)}`;
+  document.getElementById('viewer-link').href          = url;
+  document.getElementById('claim-btn').style.display   = 'none';
+  document.getElementById('claim-info').textContent    = '⏳ Tetap di tab iklan selama 30 detik...';
+
+  startTimer(state.watchSeconds);
 }
 
 function startTimer(seconds) {
   if (state.timerInterval) clearInterval(state.timerInterval);
 
-  const circle    = document.getElementById('timer-circle');
-  const numEl     = document.getElementById('timer-num');
-  const circumference = 2 * Math.PI * 65; // r=65
+  const circle        = document.getElementById('timer-circle');
+  const numEl         = document.getElementById('timer-num');
+  const infoEl        = document.getElementById('claim-info');
+  const circumference = 2 * Math.PI * 65;
+
   circle.style.strokeDasharray  = circumference;
   circle.style.strokeDashoffset = 0;
+  circle.style.stroke = 'var(--accent)';
 
-  let remaining = seconds;
-  numEl.textContent = remaining;
+  // Pakai Date.now() bukan counter biar akurat walau tab di-throttle
+  const startAt = Date.now();
+  const endAt   = startAt + (seconds * 1000);
+  state.timerCancelled = false;
+
+  numEl.textContent = seconds;
+
+  // Deteksi user balik ke webapp sebelum timer selesai
+  function onVisibilityChange() {
+    if (document.hidden) return; // user pergi ke tab lain = oke
+
+    // User balik ke webapp
+    const elapsed = (Date.now() - startAt) / 1000;
+    if (elapsed < seconds && !state.timerCancelled) {
+      // Cancel!
+      state.timerCancelled = true;
+      clearInterval(state.timerInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+
+      circle.style.stroke = '#ef4444';
+      numEl.textContent   = '✕';
+      infoEl.innerHTML    = '❌ Gagal! Kamu meninggalkan tab iklan sebelum 30 detik.';
+
+      document.getElementById('claim-btn').style.display = 'none';
+
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      showToast('Kamu harus berada di tab iklan selama 30 detik!', 'error');
+
+      // Redirect ke home setelah 2 detik
+      setTimeout(() => nav('ads'), 2000);
+    }
+  }
+
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   state.timerInterval = setInterval(() => {
-    remaining--;
+    if (state.timerCancelled) return;
+
+    const elapsed   = (Date.now() - startAt) / 1000;
+    const remaining = Math.max(0, Math.ceil(seconds - elapsed));
+
     numEl.textContent = remaining;
+    const progress = elapsed / seconds;
+    circle.style.strokeDashoffset = circumference * (1 - Math.min(progress, 1));
 
-    const progress = (seconds - remaining) / seconds;
-    circle.style.strokeDashoffset = circumference * (1 - progress);
-
-    if (remaining <= 0) {
+    if (Date.now() >= endAt) {
       clearInterval(state.timerInterval);
-      document.getElementById('claim-btn').style.display  = 'flex';
-      document.getElementById('claim-info').textContent   = '✅ Timer selesai! Klaim reward kamu.';
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+
+      document.getElementById('claim-btn').style.display = 'flex';
+      infoEl.textContent = '✅ Timer selesai! Klaim reward kamu.';
       circle.style.stroke = 'var(--green)';
+
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
-  }, 1000);
+  }, 250); // update tiap 250ms biar akurat
 }
 
 async function claimReward() {
@@ -1083,16 +1132,13 @@ async function claimReward() {
     return;
   }
 
-  // Success
   btn.style.display = 'none';
   document.getElementById('claim-info').textContent = '🎉 Reward berhasil diklaim!';
   showToast(`+${parseFloat(res.reward).toFixed(8)} USDT ditambahkan!`, 'success');
 
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-  // Refresh user balance
   await refreshUser();
-
   setTimeout(() => nav('ads'), 2000);
 }
 
