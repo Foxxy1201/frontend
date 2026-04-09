@@ -1,4 +1,9 @@
 // ============================================
+// TELEGRAM WEBAPP
+// ============================================
+const tg = window.Telegram?.WebApp;
+
+// ============================================
 // NAVIGATION
 // ============================================
 const PAGE_MAP = {
@@ -350,7 +355,12 @@ async function claimReward() {
   infoEl.textContent   = t('viewer_claimed');
   infoEl.dataset.state = 'claimed';
 
-  showToast(`+${parseFloat(res.reward).toFixed(8)} USDT ditambahkan!`, 'success');
+  // Suspicious: reward ditahan, tampil warning
+  if (res.warning || parseFloat(res.reward) === 0) {
+    showToast('⚠️ ' + (res.warning || 'Reward restricted: account under review.'), 'error');
+  } else {
+    showToast(`+${parseFloat(res.reward).toFixed(8)} USDT added!`, 'success');
+  }
 
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
@@ -822,8 +832,6 @@ function escHtml(str) {
 // ============================================
 // HELPERS: Telegram ID + Device Fingerprint
 // ============================================
-
-const tg = window.Telegram?.WebApp;
 
 function getTelegramId() {
   // 1. Dari Telegram WebApp initDataUnsafe
