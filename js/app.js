@@ -62,14 +62,70 @@ async function init() {
     showToast(t('toast_no_server'), 'error');
     return;
   }
+
+  // Banned → tampilkan halaman banned, stop semua
+  if (res.error && (res.error.toLowerCase().includes('banned') || res.error.toLowerCase().includes('suspicious'))) {
+    showBannedScreen(res.error);
+    return;
+  }
+
   if (res.error) {
     showToast(res.error, 'error');
     return;
   }
 
   state.user = res.user;
+
+  // Warning: suspicious tapi masih bisa akses
+  if (res.warning) {
+    showToast('⚠️ ' + res.warning, 'error');
+  }
+
   updateDashboard();
   loadDepositWallet();
+}
+
+// ============================================
+// BANNED / SUSPICIOUS SCREEN
+// ============================================
+function showBannedScreen(reason) {
+  const isSuspicious = reason && reason.toLowerCase().includes('suspicious');
+  const icon    = isSuspicious ? '⚠️' : '🚫';
+  const title   = isSuspicious ? 'Account Restricted' : 'Account Banned';
+  const message = isSuspicious
+    ? 'Your account has been flagged for suspicious activity. Some features are temporarily restricted pending review.'
+    : 'Your account has been banned due to multiple account usage or suspicious activity.';
+  const sub = isSuspicious
+    ? 'If you believe this is a mistake, please contact support.'
+    : 'Each user is only allowed one account per device. This action is final.';
+
+  // Hide semua page & nav
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.querySelector('.bottom-nav') && (document.querySelector('.bottom-nav').style.display = 'none');
+
+  // Inject banned screen
+  const el = document.createElement('div');
+  el.id = 'banned-screen';
+  el.style.cssText = `
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:#0a0c10;
+    display:flex;align-items:center;justify-content:center;
+    flex-direction:column;text-align:center;padding:32px;
+    z-index:9999;
+  `;
+  el.innerHTML = `
+    <div style="font-size:64px;margin-bottom:24px">${icon}</div>
+    <div style="font-size:22px;font-weight:700;color:${isSuspicious ? '#f59e0b' : '#ef4444'};margin-bottom:12px">
+      ${title}
+    </div>
+    <div style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:16px;max-width:300px">
+      ${message}
+    </div>
+    <div style="font-size:12px;color:#475569;background:#1e293b;padding:12px 16px;border-radius:8px;border:1px solid #334155;max-width:300px">
+      ${sub}
+    </div>
+  `;
+  document.body.appendChild(el);
 }
 
 // ============================================
@@ -84,6 +140,10 @@ function updateDashboard() {
 
 async function refreshUser() {
   const res = await apiGet(`/api/users/${state.telegramId}`);
+  if (res?.error && res.error.toLowerCase().includes('banned')) {
+    showBannedScreen(res.error);
+    return;
+  }
   if (res?.user) {
     state.user = res.user;
     updateDashboard();
@@ -757,6 +817,82 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ============================================
+// HELPERS: Telegram ID + Device Fingerprint
+// ============================================
+
+const tg = window.Telegram?.WebApp;
+
+function getTelegramId() {
+  // 1. Dari Telegram WebApp initDataUnsafe
+  const fromTg = tg?.initDataUnsafe?.user?.id;
+  if (fromTg) return String(fromTg);
+
+  // 2. Fallback: dari URL param ?tgid=
+  const fromUrl = new URLSearchParams(window.location.search).get('tgid');
+  if (fromUrl) return fromUrl;
+
+  return null;
+}
+
+// Generate canvas fingerprint
+function _canvasFingerprint() {
+  try {
+    const c = document.createElement('canvas');
+    const ctx = c.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = '#069';
+    ctx.fillText('ptc-fp', 2, 15);
+    ctx.fillStyle = 'rgba(102,204,0,0.7)';
+    ctx.fillText('ptc-fp', 4, 17);
+    return c.toDataURL().slice(-32);
+  } catch (e) {
+    return 'no-canvas';
+  }
+}
+
+// Build browser fingerprint hash
+function _buildFingerprint() {
+  const parts = [
+    navigator.userAgent || '',
+    navigator.language || '',
+    screen.width + 'x' + screen.height,
+    screen.colorDepth || '',
+    Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+    navigator.hardwareConcurrency || '',
+    navigator.platform || '',
+    _canvasFingerprint(),
+  ];
+  // Simple hash
+  const str = parts.join('|');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Get or create persistent localStorage ID
+function _getLocalId() {
+  let id = localStorage.getItem('_ptc_lid');
+  if (!id) {
+    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('_ptc_lid', id);
+  }
+  return id;
+}
+
+// Combine fingerprint + localStorage ID as device_id
+function getDeviceId() {
+  const fp      = _buildFingerprint();
+  const localId = _getLocalId();
+  return `${fp}_${localId}`;
 }
 
 // ============================================
