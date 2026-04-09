@@ -23,10 +23,18 @@ function _showBlock(type) {
 
 // 1. Cek apakah dibuka dari Telegram
 function _isTelegram() {
-  if (/Telegram/i.test(navigator.userAgent || "")) return true;
+  // Telegram WebApp object ada
+  if (window.Telegram?.WebApp) return true;
+  // Proxy native Telegram
   if (window.TelegramWebviewProxy) return true;
-  if (window.Telegram?.WebApp?.initData && window.Telegram.WebApp.initData !== "") return true;
+  // initData dari Telegram (bisa empty string saat dev mode)
+  if (typeof window.Telegram?.WebApp?.initData !== 'undefined') return true;
+  // User-Agent mengandung Telegram
+  if (/Telegram/i.test(navigator.userAgent || "")) return true;
+  // URL param fallback (untuk dev/testing)
   if (new URLSearchParams(window.location.search).get("tgid")) return true;
+  // Iframe dari Telegram (WebApp berjalan di iframe)
+  try { if (window.self !== window.top) return true; } catch(e) { return true; }
   return false;
 }
 
@@ -45,16 +53,33 @@ document.addEventListener("keydown", function(e) {
   if (e.metaKey && e.altKey && ["i","I"].includes(e.key)) { e.preventDefault(); return false; }
 });
 
-// 4. Detect DevTools (window size method)
+// 4. Detect DevTools
+// NOTE: Window size method dihapus karena di Telegram Mini App,
+// outerHeight vs innerHeight selalu beda besar akibat chrome Telegram
+// (status bar, keyboard, bottom nav) → false positive → app crash.
+// Diganti dengan debugger timing trick yang aman untuk WebApp.
 (function() {
-  var threshold = 160;
   var blocked = false;
-  setInterval(function() {
-    var wDiff = window.outerWidth - window.innerWidth;
-    var hDiff = window.outerHeight - window.innerHeight;
-    if ((wDiff > threshold || hDiff > threshold) && !blocked) {
+
+  function _checkDevtools() {
+    if (blocked) return;
+    // Kalau ada Telegram WebApp aktif, skip sepenuhnya
+    // (user pasti tidak bisa buka DevTools di Telegram mobile)
+    if (window.Telegram?.WebApp?.initData) return;
+
+    // Timing trick: hanya jalan di desktop browser biasa
+    var t0 = performance.now();
+    // eslint-disable-next-line no-debugger
+    debugger;
+    var t1 = performance.now();
+    if (t1 - t0 > 100) {
       blocked = true;
       _showBlock("devtools");
     }
-  }, 1000);
+  }
+
+  // Hanya jalankan di non-Telegram environment (desktop browser)
+  if (!window.Telegram?.WebApp?.initData && !window.TelegramWebviewProxy) {
+    setInterval(_checkDevtools, 2000);
+  }
 })();

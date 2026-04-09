@@ -69,7 +69,9 @@ async function init() {
   }
 
   // Banned → tampilkan halaman banned, stop semua
-  if (res.error && (res.error.toLowerCase().includes('banned') || res.error.toLowerCase().includes('suspicious'))) {
+  // PENTING: hanya hard-banned yang di-block total.
+  // User 'suspicious' masih bisa akses, hanya dapat warning toast.
+  if (res.error && res.error.toLowerCase().includes('banned')) {
     showBannedScreen(res.error);
     return;
   }
@@ -148,6 +150,10 @@ async function refreshUser() {
   if (res?.error && res.error.toLowerCase().includes('banned')) {
     showBannedScreen(res.error);
     return;
+  }
+  // Suspicious: tetap update user, tampilkan warning saja
+  if (res?.warning) {
+    showToast('⚠️ ' + res.warning, 'error');
   }
   if (res?.user) {
     state.user = res.user;
