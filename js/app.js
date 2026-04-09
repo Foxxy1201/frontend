@@ -69,8 +69,6 @@ async function init() {
   }
 
   // Banned → tampilkan halaman banned, stop semua
-  // PENTING: hanya hard-banned yang di-block total.
-  // User 'suspicious' masih bisa akses, hanya dapat warning toast.
   if (res.error && res.error.toLowerCase().includes('banned')) {
     showBannedScreen(res.error);
     return;
@@ -83,11 +81,6 @@ async function init() {
 
   state.user = res.user;
 
-  // Warning: suspicious tapi masih bisa akses
-  if (res.warning) {
-    showToast('⚠️ ' + res.warning, 'error');
-  }
-
   updateDashboard();
   loadDepositWallet();
 }
@@ -96,21 +89,10 @@ async function init() {
 // BANNED / SUSPICIOUS SCREEN
 // ============================================
 function showBannedScreen(reason) {
-  const isSuspicious = reason && reason.toLowerCase().includes('suspicious');
-  const icon    = isSuspicious ? '⚠️' : '🚫';
-  const title   = isSuspicious ? 'Account Restricted' : 'Account Banned';
-  const message = isSuspicious
-    ? 'Your account has been flagged for suspicious activity. Some features are temporarily restricted pending review.'
-    : 'Your account has been banned due to multiple account usage or suspicious activity.';
-  const sub = isSuspicious
-    ? 'If you believe this is a mistake, please contact support.'
-    : 'Each user is only allowed one account per device. This action is final.';
-
   // Hide semua page & nav
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
   document.querySelector('.bottom-nav') && (document.querySelector('.bottom-nav').style.display = 'none');
 
-  // Inject banned screen
   const el = document.createElement('div');
   el.id = 'banned-screen';
   el.style.cssText = `
@@ -121,15 +103,15 @@ function showBannedScreen(reason) {
     z-index:9999;
   `;
   el.innerHTML = `
-    <div style="font-size:64px;margin-bottom:24px">${icon}</div>
-    <div style="font-size:22px;font-weight:700;color:${isSuspicious ? '#f59e0b' : '#ef4444'};margin-bottom:12px">
-      ${title}
+    <div style="font-size:64px;margin-bottom:24px">🚫</div>
+    <div style="font-size:22px;font-weight:700;color:#ef4444;margin-bottom:12px">
+      Account Banned
     </div>
     <div style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:16px;max-width:300px">
-      ${message}
+      Your account has been banned due to policy violations.
     </div>
     <div style="font-size:12px;color:#475569;background:#1e293b;padding:12px 16px;border-radius:8px;border:1px solid #334155;max-width:300px">
-      ${sub}
+      Each user is only allowed one account per device. Contact support if you believe this is a mistake.
     </div>
   `;
   document.body.appendChild(el);
@@ -150,10 +132,6 @@ async function refreshUser() {
   if (res?.error && res.error.toLowerCase().includes('banned')) {
     showBannedScreen(res.error);
     return;
-  }
-  // Suspicious: tetap update user, tampilkan warning saja
-  if (res?.warning) {
-    showToast('⚠️ ' + res.warning, 'error');
   }
   if (res?.user) {
     state.user = res.user;
@@ -361,12 +339,7 @@ async function claimReward() {
   infoEl.textContent   = t('viewer_claimed');
   infoEl.dataset.state = 'claimed';
 
-  // Suspicious: reward ditahan, tampil warning
-  if (res.warning || parseFloat(res.reward) === 0) {
-    showToast('⚠️ ' + (res.warning || 'Reward restricted: account under review.'), 'error');
-  } else {
-    showToast(`+${parseFloat(res.reward).toFixed(8)} USDT added!`, 'success');
-  }
+  showToast(`+${parseFloat(res.reward).toFixed(8)} USDT added!`, 'success');
 
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
