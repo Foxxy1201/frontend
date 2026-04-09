@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -27,13 +26,7 @@
 <div class="page active" id="page-dashboard">
   <div class="header">
     <span class="header-title">⚡ PTC App</span>
-    <div style="display:flex;align-items:center;gap:6px">
-      <button id="lang-toggle" onclick="toggleLang()"
-        style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-weight:600">
-        🌐 EN
-      </button>
-      <span class="header-badge" id="hdr-username">@user</span>
-    </div>
+    <span class="header-badge" id="hdr-username">@user</span>
   </div>
 
   <div class="balance-grid">
@@ -52,7 +45,7 @@
   <div class="btn-grid">
     <button class="btn btn-primary"   onclick="nav('ads')">
       <span class="btn-icon">👁</span>
-      <span id="btn-watch-text">Tonton</span>
+      <span id="btn-watch-text">Watch</span>
     </button>
     <button class="btn btn-secondary" onclick="nav('deposit')">
       <span class="btn-icon">💳</span>
@@ -65,10 +58,10 @@
   </div>
 
   <div class="section">
-    <div class="section-title" id="quick-actions-title">Aksi Cepat</div>
+    <div class="section-title" id="quick-actions-title">Quick Actions</div>
     <button class="btn btn-purple btn-full" style="margin-bottom:8px" onclick="nav('create-ad')">
       <span class="btn-icon">📢</span>&nbsp;
-      <span id="btn-post-ad-text">Pasang Iklan</span>
+      <span id="btn-post-ad-text">Post Ad</span>
     </button>
     <button class="btn btn-gold btn-full" onclick="nav('referral')">
       <span class="btn-icon">🔗</span>&nbsp;
@@ -76,7 +69,7 @@
     </button>
     <button class="btn btn-full" style="margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff" onclick="nav('my-ads')">
       <span class="btn-icon">📊</span>&nbsp;
-      <span id="btn-my-ads-text">Statistik Iklan Saya</span>
+      <span id="btn-my-ads-text">My Ad Statistics</span>
     </button>
   </div>
 </div>
@@ -86,13 +79,13 @@
      ========================================== -->
 <div class="page" id="page-ads">
   <div class="header">
-    <span class="header-title" id="ads-page-title">👁 Iklan Tersedia</span>
+    <span class="header-title" id="ads-page-title">👁 Available Ads</span>
     <button class="header-badge" onclick="loadAds()"
       style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px"
       id="ads-refresh-btn">↻ Refresh</button>
   </div>
   <div class="scroll-area" id="ads-list">
-    <div class="loading"><div class="spinner"></div>Memuat iklan...</div>
+    <div class="loading"><div class="spinner"></div>Loading ads...</div>
   </div>
 </div>
 
@@ -102,14 +95,14 @@
 <div class="page" id="page-viewer">
   <div class="header">
     <button onclick="nav('ads')" style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer">←</button>
-    <span class="header-title" id="viewer-page-title">Sedang Ditonton</span>
+    <span class="header-title" id="viewer-page-title">Watching</span>
     <span></span>
   </div>
   <div class="viewer-container">
-    <div class="viewer-ad-title" id="viewer-title">Judul Iklan</div>
+    <div class="viewer-ad-title" id="viewer-title">Ad Title</div>
 
     <a class="viewer-open-btn" id="viewer-link" href="#" target="_blank" rel="noopener">
-      <span id="viewer-open-link">🔗 Buka Halaman Iklan</span>
+      <span id="viewer-open-link">🔗 Open Ad Page</span>
     </a>
 
     <div class="timer-ring">
@@ -119,12 +112,12 @@
       </svg>
       <div class="timer-text">
         <div class="timer-num" id="timer-num">30</div>
-        <div class="timer-sub" id="viewer-seconds-lbl">detik</div>
+        <div class="timer-sub" id="viewer-seconds-lbl">sec</div>
       </div>
     </div>
 
     <div class="viewer-reward-box">
-      <div class="viewer-reward-label" id="viewer-reward-label">Reward Kamu</div>
+      <div class="viewer-reward-label" id="viewer-reward-label">Your Reward</div>
       <div class="viewer-reward-amount" id="viewer-reward">+0.00050000</div>
       <div class="viewer-reward-unit">USDT</div>
     </div>
@@ -134,7 +127,7 @@
     </button>
     <div id="claim-info" data-state="wait"
          style="font-size:12px;color:var(--muted);text-align:center">
-      Tunggu timer selesai untuk klaim...
+      Wait for the timer to finish before claiming...
     </div>
   </div>
 </div>
@@ -148,33 +141,82 @@
   </div>
   <div class="scroll-area" style="padding:16px">
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
-      <div class="section-title" style="margin-bottom:8px" id="deposit-wallet-lbl">Alamat Wallet BEP-20</div>
-      <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);word-break:break-all;line-height:1.6"
-           id="deposit-wallet-addr">0x...</div>
-      <button class="btn btn-secondary" style="margin-top:10px;padding:8px 12px;font-size:12px"
-              id="deposit-copy-btn" onclick="copyWallet()">📋 Copy Alamat</button>
+    <!-- Method Tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button id="dep-tab-fp" onclick="switchDepositTab('faucetpay')"
+        style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent);color:#000;font-weight:700;font-size:13px;cursor:pointer">
+        ⚡ FaucetPay <span style="font-size:10px;font-weight:400">(Auto)</span>
+      </button>
+      <button id="dep-tab-manual" onclick="switchDepositTab('manual')"
+        style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--muted);font-weight:700;font-size:13px;cursor:pointer">
+        🔗 Manual <span style="font-size:10px;font-weight:400">(BEP-20)</span>
+      </button>
     </div>
 
-    <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--gold)">
-      <span id="deposit-warning">⚠️ Pastikan jaringan <b>BNB Smart Chain (BEP-20)</b>! Jangan kirim dari chain lain.</span>
+    <!-- FAUCETPAY TAB -->
+    <div id="dep-panel-faucetpay">
+      <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7">
+        ⚡ <b>Instant &amp; Automatic</b><br/>
+        Pay via FaucetPay — your deposit balance is credited automatically after payment is confirmed. No waiting for admin.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Amount (USDT)</label>
+        <input class="form-input" type="number" id="fp-amount" placeholder="e.g. 10" step="0.01" min="1"/>
+        <div class="form-hint">Minimum 1 USDT</div>
+      </div>
+
+      <form id="fp-form" action="https://faucetpay.io/merchant/webscr" method="post" target="_blank">
+        <input type="hidden" name="merchant_username" id="fp-merchant"/>
+        <input type="hidden" name="item_description"  value="PTC App Deposit"/>
+        <input type="hidden" name="amount1"            id="fp-amount1"/>
+        <input type="hidden" name="currency1"          value="USDT"/>
+        <input type="hidden" name="custom"             id="fp-custom"/>
+        <input type="hidden" name="callback_url"       id="fp-callback"/>
+        <input type="hidden" name="success_url"        id="fp-success"/>
+        <input type="hidden" name="cancel_url"         id="fp-cancel"/>
+      </form>
+
+      <button class="btn btn-primary btn-full" onclick="submitFaucetPay()">
+        ⚡ Pay with FaucetPay
+      </button>
+
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">
+        You'll be redirected to FaucetPay to complete payment. Balance updates automatically after confirmation.
+      </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label" id="dep-amount-lbl">Jumlah USDT yang Dikirim</label>
-      <input class="form-input" type="number" id="dep-amount" placeholder="contoh: 10" step="0.01" min="1"/>
-      <div class="form-hint" id="dep-amount-hint">Minimum 1 USDT</div>
+    <!-- MANUAL TAB -->
+    <div id="dep-panel-manual" style="display:none">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:8px" id="deposit-wallet-lbl">BEP-20 Wallet Address</div>
+        <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);word-break:break-all;line-height:1.6"
+             id="deposit-wallet-addr">0x...</div>
+        <button class="btn btn-secondary" style="margin-top:10px;padding:8px 12px;font-size:12px"
+                id="deposit-copy-btn" onclick="copyWallet()">📋 Copy Address</button>
+      </div>
+
+      <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--gold)">
+        ⚠️ Make sure to use <b>BNB Smart Chain (BEP-20)</b>! Do not send from other chains.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" id="dep-amount-lbl">USDT Amount Sent</label>
+        <input class="form-input" type="number" id="dep-amount" placeholder="e.g. 10" step="0.01" min="1"/>
+        <div class="form-hint" id="dep-amount-hint">Minimum 1 USDT</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" id="dep-txid-lbl">TXID / Transaction Hash</label>
+        <input class="form-input" type="text" id="dep-txid" placeholder="0x..."/>
+        <div class="form-hint" id="dep-txid-hint">Can be verified on BSCScan</div>
+      </div>
+
+      <button class="btn btn-secondary btn-full" id="dep-submit-btn" onclick="submitDeposit()">📤 Submit for Review</button>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">Admin will verify within 24 hours.</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label" id="dep-txid-lbl">TXID / Hash Transaksi</label>
-      <input class="form-input" type="text" id="dep-txid" placeholder="0x..."/>
-      <div class="form-hint" id="dep-txid-hint">Bisa dicek di BSCScan</div>
-    </div>
-
-    <button class="btn btn-primary btn-full" id="dep-submit-btn" onclick="submitDeposit()">📤 Submit Deposit</button>
-
-    <div class="section-title" style="margin-top:24px" id="dep-history-title">Riwayat Deposit</div>
+    <div class="section-title" style="margin-top:24px" id="dep-history-title">Deposit History</div>
     <div id="dep-history"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 </div>
@@ -195,9 +237,9 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="wd-method-lbl">Metode Withdraw</label>
+      <label class="form-label" id="wd-method-lbl">Withdraw Method</label>
       <select class="form-input" id="wd-method" onchange="onMethodChange()">
-        <option value="">Memuat metode...</option>
+        <option value="">Loading methods...</option>
       </select>
       <div class="form-hint" id="wd-method-desc"></div>
     </div>
@@ -212,24 +254,24 @@
         <span id="wd-fee-val" style="color:var(--gold)">-</span>
       </div>
       <div style="display:flex;justify-content:space-between">
-        <span style="color:var(--muted)" id="wd-received-lbl">Kamu Terima</span>
+        <span style="color:var(--muted)" id="wd-received-lbl">You Receive</span>
         <span id="wd-received-val" style="color:var(--green);font-weight:700">-</span>
       </div>
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="wd-amount-lbl">Jumlah Withdraw</label>
+      <label class="form-label" id="wd-amount-lbl">Withdraw Amount</label>
       <input class="form-input" type="number" id="wd-amount" placeholder="Minimum 1" step="0.01" min="0.01" oninput="calcWdReceived()"/>
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="wd-addr-lbl">Alamat / Nomor Tujuan</label>
-      <input class="form-input" type="text" id="wd-address" placeholder="0x... / 08xxx"/>
+      <label class="form-label" id="wd-addr-lbl">Destination Address / Number</label>
+      <input class="form-input" type="text" id="wd-address" placeholder="0x... / phone number"/>
     </div>
 
-    <button class="btn btn-success btn-full" id="wd-submit-btn" onclick="submitWithdraw()">💸 Ajukan Withdraw</button>
+    <button class="btn btn-success btn-full" id="wd-submit-btn" onclick="submitWithdraw()">💸 Request Withdraw</button>
 
-    <div class="section-title" style="margin-top:24px" id="wd-history-title">Riwayat Withdraw</div>
+    <div class="section-title" style="margin-top:24px" id="wd-history-title">Withdraw History</div>
     <div id="wd-history"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 </div>
@@ -239,7 +281,7 @@
      ========================================== -->
 <div class="page" id="page-create-ad">
   <div class="header">
-    <span class="header-title" id="create-ad-page-title">📢 Pasang Iklan</span>
+    <span class="header-title" id="create-ad-page-title">📢 Post Ad</span>
   </div>
   <div class="scroll-area" style="padding:16px">
 
@@ -250,34 +292,34 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="create-ad-title-lbl">Judul Iklan</label>
-      <input class="form-input" type="text" id="ad-title" placeholder="Nama / judul iklan kamu"/>
+      <label class="form-label" id="create-ad-title-lbl">Ad Title</label>
+      <input class="form-input" type="text" id="ad-title" placeholder="Your ad name / title"/>
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="create-ad-url-lbl">URL Tujuan</label>
+      <label class="form-label" id="create-ad-url-lbl">Target URL</label>
       <input class="form-input" type="url" id="ad-url" placeholder="https://..."/>
     </div>
 
     <div class="form-group">
-      <label class="form-label" id="create-ad-clicks-lbl">Jumlah Klik</label>
+      <label class="form-label" id="create-ad-clicks-lbl">Number of Clicks</label>
       <input class="form-input" type="number" id="ad-clicks" placeholder="Minimum 1000" min="1000" step="100"
              oninput="calcAdPrice()"/>
-      <div class="form-hint" id="create-ad-hint">Harga per klik: 0.002 USDT | Reward user: 0.0005 USDT</div>
+      <div class="form-hint" id="create-ad-hint">Price per click: 0.002 USDT | User reward: 0.0005 USDT</div>
     </div>
 
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="color:var(--muted);font-size:13px" id="create-ad-cost-lbl">Total Biaya</span>
+        <span style="color:var(--muted);font-size:13px" id="create-ad-cost-lbl">Total Cost</span>
         <span id="ad-price-display" style="font-family:'Space Mono',monospace;color:var(--gold);font-weight:700">-</span>
       </div>
       <div style="display:flex;justify-content:space-between">
-        <span style="color:var(--muted);font-size:13px" id="create-ad-reward-lbl">Total Reward Dibagi</span>
+        <span style="color:var(--muted);font-size:13px" id="create-ad-reward-lbl">Total Reward Shared</span>
         <span id="ad-reward-display" style="font-family:'Space Mono',monospace;color:var(--green);font-weight:700">-</span>
       </div>
     </div>
 
-    <button class="btn btn-purple btn-full" id="create-ad-submit-btn" onclick="submitCreateAd()">🚀 Buat Iklan</button>
+    <button class="btn btn-purple btn-full" id="create-ad-submit-btn" onclick="submitCreateAd()">🚀 Create Ad</button>
   </div>
 </div>
 
@@ -291,43 +333,43 @@
   <div class="scroll-area" style="padding:16px">
 
     <div class="ref-box">
-      <div class="balance-label" id="referral-code-lbl">Kode Referral Kamu</div>
+      <div class="balance-label" id="referral-code-lbl">Your Referral Code</div>
       <div class="ref-code-display" id="ref-code">--------</div>
       <button class="btn btn-secondary" style="padding:8px 12px;font-size:12px"
-              id="referral-copy-btn" onclick="copyRef()">📋 Copy Link Referral</button>
+              id="referral-copy-btn" onclick="copyRef()">📋 Copy Referral Link</button>
     </div>
 
     <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.6">
       <span id="referral-info">
-        💡 Setiap user yang daftar via link kamu dan klik iklan,<br/>
-        kamu dapat <b style="color:var(--green)">10% dari reward</b> mereka secara otomatis!
+        💡 Every user who signs up via your link and clicks ads,<br/>
+        you earn <b style="color:var(--green)">10% of their reward</b> automatically!
       </span>
     </div>
 
     <div class="ref-stats-grid">
       <div class="ref-stat">
         <div class="ref-stat-val" id="ref-total">0</div>
-        <div class="ref-stat-lbl" id="referral-total-lbl">Total Referral</div>
+        <div class="ref-stat-lbl" id="referral-total-lbl">Total Referrals</div>
       </div>
       <div class="ref-stat">
         <div class="ref-stat-val" id="ref-earned">0.00000000</div>
-        <div class="ref-stat-lbl" id="referral-earned-lbl">Total Komisi (USDT)</div>
+        <div class="ref-stat-lbl" id="referral-earned-lbl">Total Commission (USDT)</div>
       </div>
     </div>
 
-    <div class="section-title" style="margin-top:16px" id="referral-list-title">Daftar Referral</div>
+    <div class="section-title" style="margin-top:16px" id="referral-list-title">Referral List</div>
     <div id="ref-list"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 </div>
 
 
 <!-- ==========================================
-     PAGE: MY ADS (Statistik Iklan)
+     PAGE: MY ADS
      ========================================== -->
 <div class="page" id="page-my-ads">
   <div class="header">
     <button onclick="nav('dashboard')" style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer">←</button>
-    <span class="header-title" id="my-ads-page-title">📊 Statistik Iklan</span>
+    <span class="header-title" id="my-ads-page-title">📊 My Ad Statistics</span>
     <button onclick="loadMyAds()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer">↻</button>
   </div>
   <div class="scroll-area" id="my-ads-list">
@@ -343,7 +385,7 @@
     <span class="nav-icon">🏠</span><span id="nav-home-lbl">Home</span>
   </button>
   <button class="nav-item" id="nav-ads" onclick="nav('ads')">
-    <span class="nav-icon">👁</span><span id="nav-ads-lbl">Iklan</span>
+    <span class="nav-icon">👁</span><span id="nav-ads-lbl">Ads</span>
   </button>
   <button class="nav-item" id="nav-deposit" onclick="nav('deposit')">
     <span class="nav-icon">💳</span><span id="nav-deposit-lbl">Deposit</span>

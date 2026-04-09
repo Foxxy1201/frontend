@@ -25,7 +25,7 @@ function nav(page) {
 
   // Lazy-load page data
   if (page === 'ads')       loadAds();
-  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); }
+  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); loadFaucetPayConfig(); }
   if (page === 'withdraw')  { loadWithdrawHistory(); updateWdBalance(); }
   if (page === 'create-ad') updateAdDepBal();
   if (page === 'referral')  loadReferral();
@@ -47,7 +47,6 @@ async function init() {
   }
 
   state.telegramId = tgId;
-  applyLang();
   state.username = tg?.initDataUnsafe?.user?.username || 'user';
 
   const deviceId = getDeviceId();
@@ -104,25 +103,64 @@ async function loadAds() {
     return;
   }
 
-  const ads = res.ads || [];
-  if (ads.length === 0) {
+  const ads       = res.ads || [];
+  const available = ads.filter(ad => !ad.already_viewed);
+  const totalAds  = ads.length;
+  const doneAds   = ads.filter(ad => ad.already_viewed).length;
+
+  if (totalAds === 0) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>${t('ads_empty')}</div>`;
     return;
   }
 
-  container.innerHTML = '<div style="padding:12px 16px">' + ads.map(ad => `
-    <div class="ad-card ${ad.already_viewed ? 'viewed' : ''}"
-         onclick="${ad.already_viewed ? '' : `startView(${ad.id},'${escHtml(ad.title)}','${escHtml(ad.url)}',${ad.reward_per_click})`}">
-      <div class="ad-icon">📢</div>
-      <div class="ad-info">
-        <div class="ad-title">${escHtml(ad.title)}</div>
-        <div class="ad-reward">+${parseFloat(ad.reward_per_click).toFixed(8)} USDT</div>
+  if (available.length === 0) {
+    container.innerHTML = `
+      <div style="padding:24px 16px;text-align:center">
+        <div style="font-size:48px;margin-bottom:16px">🎉</div>
+        <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:8px">${t('ads_all_done_title')}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">${t('ads_all_done_sub')}</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:inline-block;min-width:160px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${t('ads_watched_today')}</div>
+          <div style="font-size:22px;font-weight:700;color:var(--green)">${doneAds} / ${totalAds}</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Pilih 1 iklan random dari yang tersedia
+  const ad = available[Math.floor(Math.random() * available.length)];
+
+  container.innerHTML = `
+    <div style="padding:16px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${t('ads_progress_today')}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--accent)">${doneAds} ${t('ads_done_of')} ${totalAds} ${t('ads_done_label')}</div>
+        </div>
+        <div style="font-size:22px;font-weight:700;color:var(--green)">${Math.round((doneAds/totalAds)*100)}%</div>
       </div>
-      <div class="ad-status ${ad.already_viewed ? 'viewed-tag' : 'available'}">
-        ${ad.already_viewed ? '✓ ' + t('ads_viewed').split(' ')[0] : t('btn_watch_ad')}
+
+      <div style="background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:12px">📢</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.4">${escHtml(ad.title)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;word-break:break-all">${escHtml(ad.url)}</div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${t('ads_reward_label')}</div>
+          <div style="font-size:20px;font-weight:700;color:var(--green)">+${parseFloat(ad.reward_per_click).toFixed(8)} USDT</div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="startView(${ad.id},'${escHtml(ad.title)}','${escHtml(ad.url)}',${ad.reward_per_click})">
+          <span style="font-size:16px">👁</span> ${t('btn_watch_ad')}
+        </button>
       </div>
-    </div>
-  `).join('') + '</div>';
+
+      <button onclick="loadAds()" style="width:100%;background:none;border:1px solid var(--border);color:var(--muted);padding:10px;border-radius:8px;font-size:13px;cursor:pointer">
+        🔀 ${t('ads_shuffle')}
+      </button>
+
+      <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted)">
+        ${available.length} ${t('ads_remaining')}
+      </div>
+    </div>`;
 }
 
 // ============================================
@@ -257,15 +295,86 @@ async function claimReward() {
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
   await refreshUser();
-  setTimeout(() => nav('ads'), 2000);
+  // Load iklan random berikutnya setelah 2 detik
+  setTimeout(() => {
+    nav('ads');
+    loadAds();
+  }, 2000);
 }
 
 // ============================================
 // DEPOSIT
 // ============================================
+// ============================================
+// DEPOSIT TAB SWITCH
+// ============================================
+function switchDepositTab(tab) {
+  const fpPanel  = document.getElementById('dep-panel-faucetpay');
+  const manPanel = document.getElementById('dep-panel-manual');
+  const fpBtn    = document.getElementById('dep-tab-fp');
+  const manBtn   = document.getElementById('dep-tab-manual');
+
+  if (tab === 'faucetpay') {
+    fpPanel.style.display  = '';
+    manPanel.style.display = 'none';
+    fpBtn.style.background  = 'var(--accent)';
+    fpBtn.style.color       = '#000';
+    fpBtn.style.borderColor = 'var(--accent)';
+    manBtn.style.background  = 'var(--surface)';
+    manBtn.style.color       = 'var(--muted)';
+    manBtn.style.borderColor = 'var(--border)';
+  } else {
+    fpPanel.style.display  = 'none';
+    manPanel.style.display = '';
+    manBtn.style.background  = 'var(--accent)';
+    manBtn.style.color       = '#000';
+    manBtn.style.borderColor = 'var(--accent)';
+    fpBtn.style.background  = 'var(--surface)';
+    fpBtn.style.color       = 'var(--muted)';
+    fpBtn.style.borderColor = 'var(--border)';
+  }
+}
+
+// ============================================
+// FAUCETPAY DEPOSIT
+// ============================================
+let fpConfig = null;
+
+async function loadFaucetPayConfig() {
+  if (fpConfig) return; // already loaded
+  const res = await apiGet('/api/deposits/faucetpay/config', { telegram_id: state.telegramId });
+  if (res && !res.error) {
+    fpConfig = res;
+    document.getElementById('fp-merchant').value  = fpConfig.merchant_username;
+    document.getElementById('fp-custom').value    = fpConfig.custom;
+    document.getElementById('fp-callback').value  = fpConfig.callback_url;
+    document.getElementById('fp-success').value   = fpConfig.success_url;
+    document.getElementById('fp-cancel').value    = fpConfig.cancel_url;
+  }
+}
+
+async function submitFaucetPay() {
+  const amount = parseFloat(document.getElementById('fp-amount').value);
+  if (!amount || amount < 1) {
+    showToast('Enter a valid amount (minimum 1 USDT)', 'error');
+    return;
+  }
+
+  await loadFaucetPayConfig();
+
+  if (!fpConfig) {
+    showToast('Failed to load payment config. Try again.', 'error');
+    return;
+  }
+
+  document.getElementById('fp-amount1').value = amount.toFixed(2);
+  document.getElementById('fp-form').submit();
+  showToast('Redirecting to FaucetPay...', 'info');
+}
+
 async function loadDepositWallet() {
   const walletEl = document.getElementById('deposit-wallet-addr');
-  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8'; // ganti saat deploy
+  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8';
 }
 
 function copyWallet() {
@@ -313,10 +422,11 @@ async function loadDepositHistory() {
 
   el.innerHTML = deps.map(d => `
     <div class="history-item">
-      <div class="history-icon">💳</div>
+      <div class="history-icon">${d.type === 'auto' ? '⚡' : '🔗'}</div>
       <div class="history-info">
         <div class="history-label">${parseFloat(d.amount).toFixed(4)} USDT</div>
         <div class="history-sub">${d.txid.slice(0,10)}...${d.txid.slice(-6)}</div>
+        <div style="font-size:10px;color:var(--muted)">${d.type === 'auto' ? 'FaucetPay' : 'Manual BEP-20'}</div>
       </div>
       <div class="history-amount status-${d.status}">${t('status_' + d.status) || d.status}</div>
     </div>
