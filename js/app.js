@@ -1,9 +1,4 @@
 // ============================================
-// TELEGRAM WEBAPP
-// ============================================
-const tg = window.Telegram?.WebApp;
-
-// ============================================
 // NAVIGATION
 // ============================================
 const PAGE_MAP = {
@@ -67,54 +62,14 @@ async function init() {
     showToast(t('toast_no_server'), 'error');
     return;
   }
-
-  // Banned → tampilkan halaman banned, stop semua
-  if (res.error && res.error.toLowerCase().includes('banned')) {
-    showBannedScreen(res.error);
-    return;
-  }
-
   if (res.error) {
     showToast(res.error, 'error');
     return;
   }
 
   state.user = res.user;
-
   updateDashboard();
   loadDepositWallet();
-}
-
-// ============================================
-// BANNED / SUSPICIOUS SCREEN
-// ============================================
-function showBannedScreen(reason) {
-  // Hide semua page & nav
-  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-  document.querySelector('.bottom-nav') && (document.querySelector('.bottom-nav').style.display = 'none');
-
-  const el = document.createElement('div');
-  el.id = 'banned-screen';
-  el.style.cssText = `
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    background:#0a0c10;
-    display:flex;align-items:center;justify-content:center;
-    flex-direction:column;text-align:center;padding:32px;
-    z-index:9999;
-  `;
-  el.innerHTML = `
-    <div style="font-size:64px;margin-bottom:24px">🚫</div>
-    <div style="font-size:22px;font-weight:700;color:#ef4444;margin-bottom:12px">
-      Account Banned
-    </div>
-    <div style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:16px;max-width:300px">
-      Your account has been banned due to policy violations.
-    </div>
-    <div style="font-size:12px;color:#475569;background:#1e293b;padding:12px 16px;border-radius:8px;border:1px solid #334155;max-width:300px">
-      Each user is only allowed one account per device. Contact support if you believe this is a mistake.
-    </div>
-  `;
-  document.body.appendChild(el);
 }
 
 // ============================================
@@ -129,10 +84,6 @@ function updateDashboard() {
 
 async function refreshUser() {
   const res = await apiGet(`/api/users/${state.telegramId}`);
-  if (res?.error && res.error.toLowerCase().includes('banned')) {
-    showBannedScreen(res.error);
-    return;
-  }
   if (res?.user) {
     state.user = res.user;
     updateDashboard();
@@ -339,7 +290,7 @@ async function claimReward() {
   infoEl.textContent   = t('viewer_claimed');
   infoEl.dataset.state = 'claimed';
 
-  showToast(`+${parseFloat(res.reward).toFixed(8)} USDT added!`, 'success');
+  showToast(`+${parseFloat(res.reward).toFixed(8)} USDT ditambahkan!`, 'success');
 
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
@@ -811,6 +762,8 @@ function escHtml(str) {
 // ============================================
 // HELPERS: Telegram ID + Device Fingerprint
 // ============================================
+
+const tg = window.Telegram?.WebApp;
 
 function getTelegramId() {
   // 1. Dari Telegram WebApp initDataUnsafe
