@@ -25,7 +25,7 @@ function nav(page) {
 
   // Lazy-load page data
   if (page === 'ads')       loadAds();
-  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); loadFaucetPayConfig(); }
+  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); }
   if (page === 'withdraw')  { loadWithdrawHistory(); updateWdBalance(); }
   if (page === 'create-ad') updateAdDepBal();
   if (page === 'referral')  loadReferral();
@@ -305,76 +305,9 @@ async function claimReward() {
 // ============================================
 // DEPOSIT
 // ============================================
-// ============================================
-// DEPOSIT TAB SWITCH
-// ============================================
-function switchDepositTab(tab) {
-  const fpPanel  = document.getElementById('dep-panel-faucetpay');
-  const manPanel = document.getElementById('dep-panel-manual');
-  const fpBtn    = document.getElementById('dep-tab-fp');
-  const manBtn   = document.getElementById('dep-tab-manual');
-
-  if (tab === 'faucetpay') {
-    fpPanel.style.display  = '';
-    manPanel.style.display = 'none';
-    fpBtn.style.background  = 'var(--accent)';
-    fpBtn.style.color       = '#000';
-    fpBtn.style.borderColor = 'var(--accent)';
-    manBtn.style.background  = 'var(--surface)';
-    manBtn.style.color       = 'var(--muted)';
-    manBtn.style.borderColor = 'var(--border)';
-  } else {
-    fpPanel.style.display  = 'none';
-    manPanel.style.display = '';
-    manBtn.style.background  = 'var(--accent)';
-    manBtn.style.color       = '#000';
-    manBtn.style.borderColor = 'var(--accent)';
-    fpBtn.style.background  = 'var(--surface)';
-    fpBtn.style.color       = 'var(--muted)';
-    fpBtn.style.borderColor = 'var(--border)';
-  }
-}
-
-// ============================================
-// FAUCETPAY DEPOSIT
-// ============================================
-let fpConfig = null;
-
-async function loadFaucetPayConfig() {
-  if (fpConfig) return; // already loaded
-  const res = await apiGet('/api/deposits/faucetpay/config', { telegram_id: state.telegramId });
-  if (res && !res.error) {
-    fpConfig = res;
-    document.getElementById('fp-merchant').value  = fpConfig.merchant_username;
-    document.getElementById('fp-custom').value    = fpConfig.custom;
-    document.getElementById('fp-callback').value  = fpConfig.callback_url;
-    document.getElementById('fp-success').value   = fpConfig.success_url;
-    document.getElementById('fp-cancel').value    = fpConfig.cancel_url;
-  }
-}
-
-async function submitFaucetPay() {
-  const amount = parseFloat(document.getElementById('fp-amount').value);
-  if (!amount || amount < 1) {
-    showToast('Enter a valid amount (minimum 1 USDT)', 'error');
-    return;
-  }
-
-  await loadFaucetPayConfig();
-
-  if (!fpConfig) {
-    showToast('Failed to load payment config. Try again.', 'error');
-    return;
-  }
-
-  document.getElementById('fp-amount1').value = amount.toFixed(2);
-  document.getElementById('fp-form').submit();
-  showToast('Redirecting to FaucetPay...', 'info');
-}
-
 async function loadDepositWallet() {
   const walletEl = document.getElementById('deposit-wallet-addr');
-  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8';
+  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8'; // ganti saat deploy
 }
 
 function copyWallet() {
@@ -422,11 +355,10 @@ async function loadDepositHistory() {
 
   el.innerHTML = deps.map(d => `
     <div class="history-item">
-      <div class="history-icon">${d.type === 'auto' ? '⚡' : '🔗'}</div>
+      <div class="history-icon">💳</div>
       <div class="history-info">
         <div class="history-label">${parseFloat(d.amount).toFixed(4)} USDT</div>
         <div class="history-sub">${d.txid.slice(0,10)}...${d.txid.slice(-6)}</div>
-        <div style="font-size:10px;color:var(--muted)">${d.type === 'auto' ? 'FaucetPay' : 'Manual BEP-20'}</div>
       </div>
       <div class="history-amount status-${d.status}">${t('status_' + d.status) || d.status}</div>
     </div>
@@ -757,82 +689,6 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-// ============================================
-// HELPERS: Telegram ID + Device Fingerprint
-// ============================================
-
-const tg = window.Telegram?.WebApp;
-
-function getTelegramId() {
-  // 1. Dari Telegram WebApp initDataUnsafe
-  const fromTg = tg?.initDataUnsafe?.user?.id;
-  if (fromTg) return String(fromTg);
-
-  // 2. Fallback: dari URL param ?tgid=
-  const fromUrl = new URLSearchParams(window.location.search).get('tgid');
-  if (fromUrl) return fromUrl;
-
-  return null;
-}
-
-// Generate canvas fingerprint
-function _canvasFingerprint() {
-  try {
-    const c = document.createElement('canvas');
-    const ctx = c.getContext('2d');
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillStyle = '#f60';
-    ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = '#069';
-    ctx.fillText('ptc-fp', 2, 15);
-    ctx.fillStyle = 'rgba(102,204,0,0.7)';
-    ctx.fillText('ptc-fp', 4, 17);
-    return c.toDataURL().slice(-32);
-  } catch (e) {
-    return 'no-canvas';
-  }
-}
-
-// Build browser fingerprint hash
-function _buildFingerprint() {
-  const parts = [
-    navigator.userAgent || '',
-    navigator.language || '',
-    screen.width + 'x' + screen.height,
-    screen.colorDepth || '',
-    Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-    navigator.hardwareConcurrency || '',
-    navigator.platform || '',
-    _canvasFingerprint(),
-  ];
-  // Simple hash
-  const str = parts.join('|');
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
-}
-
-// Get or create persistent localStorage ID
-function _getLocalId() {
-  let id = localStorage.getItem('_ptc_lid');
-  if (!id) {
-    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('_ptc_lid', id);
-  }
-  return id;
-}
-
-// Combine fingerprint + localStorage ID as device_id
-function getDeviceId() {
-  const fp      = _buildFingerprint();
-  const localId = _getLocalId();
-  return `${fp}_${localId}`;
 }
 
 // ============================================
