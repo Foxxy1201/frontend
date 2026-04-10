@@ -25,7 +25,7 @@ function nav(page) {
 
   // Lazy-load page data
   if (page === 'ads')       loadAds();
-  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); }
+  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); loadFaucetPayConfig(); }
   if (page === 'withdraw')  { loadWithdrawHistory(); updateWdBalance(); }
   if (page === 'create-ad') updateAdDepBal();
   if (page === 'referral')  loadReferral();
@@ -305,9 +305,76 @@ async function claimReward() {
 // ============================================
 // DEPOSIT
 // ============================================
+// ============================================
+// DEPOSIT TAB SWITCH
+// ============================================
+function switchDepositTab(tab) {
+  const fpPanel  = document.getElementById('dep-panel-faucetpay');
+  const manPanel = document.getElementById('dep-panel-manual');
+  const fpBtn    = document.getElementById('dep-tab-fp');
+  const manBtn   = document.getElementById('dep-tab-manual');
+
+  if (tab === 'faucetpay') {
+    fpPanel.style.display  = '';
+    manPanel.style.display = 'none';
+    fpBtn.style.background  = 'var(--accent)';
+    fpBtn.style.color       = '#000';
+    fpBtn.style.borderColor = 'var(--accent)';
+    manBtn.style.background  = 'var(--surface)';
+    manBtn.style.color       = 'var(--muted)';
+    manBtn.style.borderColor = 'var(--border)';
+  } else {
+    fpPanel.style.display  = 'none';
+    manPanel.style.display = '';
+    manBtn.style.background  = 'var(--accent)';
+    manBtn.style.color       = '#000';
+    manBtn.style.borderColor = 'var(--accent)';
+    fpBtn.style.background  = 'var(--surface)';
+    fpBtn.style.color       = 'var(--muted)';
+    fpBtn.style.borderColor = 'var(--border)';
+  }
+}
+
+// ============================================
+// FAUCETPAY DEPOSIT
+// ============================================
+let fpConfig = null;
+
+async function loadFaucetPayConfig() {
+  if (fpConfig) return; // already loaded
+  const res = await apiGet('/api/deposits/faucetpay/config', { telegram_id: state.telegramId });
+  if (res && !res.error) {
+    fpConfig = res;
+    document.getElementById('fp-merchant').value  = fpConfig.merchant_username;
+    document.getElementById('fp-custom').value    = fpConfig.custom;
+    document.getElementById('fp-callback').value  = fpConfig.callback_url;
+    document.getElementById('fp-success').value   = fpConfig.success_url;
+    document.getElementById('fp-cancel').value    = fpConfig.cancel_url;
+  }
+}
+
+async function submitFaucetPay() {
+  const amount = parseFloat(document.getElementById('fp-amount').value);
+  if (!amount || amount < 1) {
+    showToast('Enter a valid amount (minimum 1 USDT)', 'error');
+    return;
+  }
+
+  await loadFaucetPayConfig();
+
+  if (!fpConfig) {
+    showToast('Failed to load payment config. Try again.', 'error');
+    return;
+  }
+
+  document.getElementById('fp-amount1').value = amount.toFixed(2);
+  document.getElementById('fp-form').submit();
+  showToast('Redirecting to FaucetPay...', 'info');
+}
+
 async function loadDepositWallet() {
   const walletEl = document.getElementById('deposit-wallet-addr');
-  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8'; // ganti saat deploy
+  walletEl.textContent = '0x6355fC426155c92577147152e690A4A6475045A8';
 }
 
 function copyWallet() {
@@ -355,10 +422,11 @@ async function loadDepositHistory() {
 
   el.innerHTML = deps.map(d => `
     <div class="history-item">
-      <div class="history-icon">💳</div>
+      <div class="history-icon">${d.type === 'auto' ? '⚡' : '🔗'}</div>
       <div class="history-info">
         <div class="history-label">${parseFloat(d.amount).toFixed(4)} USDT</div>
         <div class="history-sub">${d.txid.slice(0,10)}...${d.txid.slice(-6)}</div>
+        <div style="font-size:10px;color:var(--muted)">${d.type === 'auto' ? 'FaucetPay' : 'Manual BEP-20'}</div>
       </div>
       <div class="history-amount status-${d.status}">${t('status_' + d.status) || d.status}</div>
     </div>
