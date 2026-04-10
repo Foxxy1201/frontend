@@ -1,5 +1,89 @@
 // ============================================
-// NAVIGATION
+// SOUND ENGINE (Web Audio API — no files needed)
+// ============================================
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+
+    if (type === 'tap') {
+      // Short soft tick
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.start(now); osc.stop(now + 0.06);
+    } else if (type === 'nav') {
+      // Tab switch swoosh
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.1);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.start(now); osc.stop(now + 0.12);
+    } else if (type === 'success') {
+      // Chime up
+      [0, 0.1, 0.2].forEach((delay, i) => {
+        const o2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.type = 'sine';
+        const freqs = [523, 659, 784];
+        o2.frequency.setValueAtTime(freqs[i], now + delay);
+        g2.gain.setValueAtTime(0.1, now + delay);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.18);
+        o2.start(now + delay); o2.stop(now + delay + 0.2);
+      });
+      return;
+    } else if (type === 'error') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.15);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
+    } else if (type === 'claim') {
+      // Victory fanfare
+      [[0,523],[0.08,659],[0.16,784],[0.24,1046]].forEach(([delay, freq]) => {
+        const o2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.type = 'sine';
+        o2.frequency.setValueAtTime(freq, now + delay);
+        g2.gain.setValueAtTime(0.12, now + delay);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.22);
+        o2.start(now + delay); o2.stop(now + delay + 0.25);
+      });
+      return;
+    }
+  } catch(e) { /* audio not available */ }
+}
+
+// Attach tap sound to all buttons globally
+document.addEventListener('pointerdown', (e) => {
+  const btn = e.target.closest('button, .btn, .ad-card, .nav-item, a.viewer-open-btn');
+  if (btn) {
+    const isNav = btn.classList.contains('nav-item');
+    playSound(isNav ? 'nav' : 'tap');
+  }
+}, { passive: true });
+
+// ============================================
+// NAVIGATION with slide direction
 // ============================================
 const PAGE_MAP = {
   'dashboard': 'page-dashboard',
@@ -13,12 +97,23 @@ const PAGE_MAP = {
 };
 const NAV_PAGES = ['dashboard', 'ads', 'deposit', 'withdraw', 'referral'];
 
+// Track current tab index for slide direction
+let _currentNavIndex = 0;
+
 function nav(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Determine slide direction based on nav tab order
+  const newIndex = NAV_PAGES.indexOf(page);
+  const fromLeft = newIndex !== -1 && newIndex < _currentNavIndex;
+  if (newIndex !== -1) _currentNavIndex = newIndex;
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'slide-from-left'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
   const el = document.getElementById(PAGE_MAP[page]);
-  if (el) el.classList.add('active');
+  if (el) {
+    if (fromLeft) el.classList.add('slide-from-left');
+    el.classList.add('active');
+  }
 
   const navEl = document.getElementById(`nav-${page}`);
   if (navEl) navEl.classList.add('active');
@@ -852,6 +947,9 @@ function showToast(msg, type = 'info') {
   el.className   = `toast ${type} show`;
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+  // Sound feedback
+  if (type === 'success') playSound('success');
+  else if (type === 'error') playSound('error');
 }
 
 // ============================================
