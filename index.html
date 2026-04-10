@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -141,80 +142,31 @@
   </div>
   <div class="scroll-area" style="padding:16px">
 
-    <!-- Method Tabs -->
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button id="dep-tab-fp" onclick="switchDepositTab('faucetpay')"
-        style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent);color:#000;font-weight:700;font-size:13px;cursor:pointer">
-        ⚡ FaucetPay <span style="font-size:10px;font-weight:400">(Auto)</span>
-      </button>
-      <button id="dep-tab-manual" onclick="switchDepositTab('manual')"
-        style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--muted);font-weight:700;font-size:13px;cursor:pointer">
-        🔗 Manual <span style="font-size:10px;font-weight:400">(BEP-20)</span>
-      </button>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:8px" id="deposit-wallet-lbl">BEP-20 Wallet Address</div>
+      <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);word-break:break-all;line-height:1.6"
+           id="deposit-wallet-addr">0x...</div>
+      <button class="btn btn-secondary" style="margin-top:10px;padding:8px 12px;font-size:12px"
+              id="deposit-copy-btn" onclick="copyWallet()">📋 Copy Address</button>
     </div>
 
-    <!-- FAUCETPAY TAB -->
-    <div id="dep-panel-faucetpay">
-      <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7">
-        ⚡ <b>Instant &amp; Automatic</b><br/>
-        Pay via FaucetPay — your deposit balance is credited automatically after payment is confirmed. No waiting for admin.
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Amount (USDT)</label>
-        <input class="form-input" type="number" id="fp-amount" placeholder="e.g. 10" step="0.01" min="1"/>
-        <div class="form-hint">Minimum 1 USDT</div>
-      </div>
-
-      <form id="fp-form" action="https://faucetpay.io/merchant/webscr" method="post" target="_blank">
-        <input type="hidden" name="merchant_username" id="fp-merchant"/>
-        <input type="hidden" name="item_description"  value="PTC App Deposit"/>
-        <input type="hidden" name="amount1"            id="fp-amount1"/>
-        <input type="hidden" name="currency1"          value="USDT"/>
-        <input type="hidden" name="custom"             id="fp-custom"/>
-        <input type="hidden" name="callback_url"       id="fp-callback"/>
-        <input type="hidden" name="success_url"        id="fp-success"/>
-        <input type="hidden" name="cancel_url"         id="fp-cancel"/>
-      </form>
-
-      <button class="btn btn-primary btn-full" onclick="submitFaucetPay()">
-        ⚡ Pay with FaucetPay
-      </button>
-
-      <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">
-        You'll be redirected to FaucetPay to complete payment. Balance updates automatically after confirmation.
-      </div>
+    <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--gold)">
+      <span id="deposit-warning">⚠️ Make sure to use <b>BNB Smart Chain (BEP-20)</b>! Do not send from other chains.</span>
     </div>
 
-    <!-- MANUAL TAB -->
-    <div id="dep-panel-manual" style="display:none">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
-        <div class="section-title" style="margin-bottom:8px" id="deposit-wallet-lbl">BEP-20 Wallet Address</div>
-        <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);word-break:break-all;line-height:1.6"
-             id="deposit-wallet-addr">0x...</div>
-        <button class="btn btn-secondary" style="margin-top:10px;padding:8px 12px;font-size:12px"
-                id="deposit-copy-btn" onclick="copyWallet()">📋 Copy Address</button>
-      </div>
-
-      <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--gold)">
-        ⚠️ Make sure to use <b>BNB Smart Chain (BEP-20)</b>! Do not send from other chains.
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" id="dep-amount-lbl">USDT Amount Sent</label>
-        <input class="form-input" type="number" id="dep-amount" placeholder="e.g. 10" step="0.01" min="1"/>
-        <div class="form-hint" id="dep-amount-hint">Minimum 1 USDT</div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" id="dep-txid-lbl">TXID / Transaction Hash</label>
-        <input class="form-input" type="text" id="dep-txid" placeholder="0x..."/>
-        <div class="form-hint" id="dep-txid-hint">Can be verified on BSCScan</div>
-      </div>
-
-      <button class="btn btn-secondary btn-full" id="dep-submit-btn" onclick="submitDeposit()">📤 Submit for Review</button>
-      <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">Admin will verify within 24 hours.</div>
+    <div class="form-group">
+      <label class="form-label" id="dep-amount-lbl">USDT Amount Sent</label>
+      <input class="form-input" type="number" id="dep-amount" placeholder="e.g. 10" step="0.01" min="1"/>
+      <div class="form-hint" id="dep-amount-hint">Minimum 1 USDT</div>
     </div>
+
+    <div class="form-group">
+      <label class="form-label" id="dep-txid-lbl">TXID / Transaction Hash</label>
+      <input class="form-input" type="text" id="dep-txid" placeholder="0x..."/>
+      <div class="form-hint" id="dep-txid-hint">Can be verified on BSCScan</div>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="dep-submit-btn" onclick="submitDeposit()">📤 Submit Deposit</button>
 
     <div class="section-title" style="margin-top:24px" id="dep-history-title">Deposit History</div>
     <div id="dep-history"><div class="loading"><div class="spinner"></div></div></div>
