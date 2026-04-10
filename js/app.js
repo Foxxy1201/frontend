@@ -103,10 +103,18 @@ async function loadAds() {
     return;
   }
 
-  const ads       = res.ads || [];
-  const available = ads.filter(ad => !ad.already_viewed);
-  const totalAds  = ads.length;
-  const doneAds   = ads.filter(ad => ad.already_viewed).length;
+  // ── REST PERIOD: tampilkan countdown, kunci tombol ────────────────
+  if (res.resting && res.rest_until) {
+    showRestScreen(container, res.rest_until);
+    return;
+  }
+
+  const ads        = res.ads || [];
+  const available  = ads.filter(ad => !ad.already_viewed);
+  const viewsToday = res.views_today || 0;
+  const dailyLimit = res.daily_limit || 100;
+  const totalAds   = ads.length;
+  const doneAds    = ads.filter(ad => ad.already_viewed).length;
 
   if (totalAds === 0) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>${t('ads_empty')}</div>`;
@@ -130,14 +138,21 @@ async function loadAds() {
   // Pilih 1 iklan random dari yang tersedia
   const ad = available[Math.floor(Math.random() * available.length)];
 
+  // Progress bar harian (dari 0 → dailyLimit)
+  const progressPct = Math.min(100, Math.round((viewsToday / dailyLimit) * 100));
+  const progressColor = progressPct >= 80 ? 'var(--gold)' : 'var(--accent)';
+
   container.innerHTML = `
     <div style="padding:16px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${t('ads_progress_today')}</div>
-          <div style="font-size:13px;font-weight:600;color:var(--accent)">${doneAds} ${t('ads_done_of')} ${totalAds} ${t('ads_done_label')}</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:11px;color:var(--muted)">${t('ads_progress_today')}</div>
+          <div style="font-size:13px;font-weight:600;color:${progressColor}">${viewsToday} / ${dailyLimit}</div>
         </div>
-        <div style="font-size:22px;font-weight:700;color:var(--green)">${Math.round((doneAds/totalAds)*100)}%</div>
+        <div style="background:var(--surface2);border-radius:4px;height:5px;overflow:hidden">
+          <div style="background:${progressColor};height:100%;width:${progressPct}%;border-radius:4px;transition:width 0.4s"></div>
+        </div>
+        ${progressPct >= 80 ? `<div style="font-size:10px;color:var(--gold);margin-top:4px">⚠️ Mendekati batas harian (${dailyLimit} klik)</div>` : ''}
       </div>
 
       <div style="background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px">
@@ -161,6 +176,88 @@ async function loadAds() {
         ${available.length} ${t('ads_remaining')}
       </div>
     </div>`;
+}
+
+// ============================================
+// REST PERIOD SCREEN
+// ============================================
+let _restInterval = null;
+
+function showRestScreen(container, restUntilMs) {
+  if (_restInterval) clearInterval(_restInterval);
+
+  function render() {
+    const remaining = Math.max(0, restUntilMs - Date.now());
+    if (remaining <= 0) {
+      clearInterval(_restInterval);
+      _restInterval = null;
+      loadAds(); // auto-refresh setelah selesai
+      return;
+    }
+
+    const totalSecs = Math.ceil(remaining / 1000);
+    const hrs  = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    const pad  = n => String(n).padStart(2, '0');
+
+    // Progress ring (0→3600s)
+    const fullDuration = 3600;
+    const elapsed = fullDuration - Math.min(fullDuration, totalSecs);
+    const pct = elapsed / fullDuration; // 0=full, 1=empty
+    const circumference = 2 * Math.PI * 54;
+    const offset = circumference * pct;
+
+    container.innerHTML = `
+      <div style="padding:32px 20px;text-align:center">
+
+        <div style="font-size:13px;font-weight:600;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">
+          ☕ Get rest for a moment
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:28px;line-height:1.6">
+          Kamu telah menonton <b style="color:var(--accent)">100 iklan</b> hari ini.<br>
+          Istirahat sebentar ya, tombol Watch akan aktif kembali setelah countdown selesai.
+        </div>
+
+        <!-- Countdown ring -->
+        <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:24px">
+          <svg width="128" height="128" viewBox="0 0 128 128" style="transform:rotate(-90deg)">
+            <circle cx="64" cy="64" r="54"
+              fill="none" stroke="var(--surface2)" stroke-width="8"/>
+            <circle cx="64" cy="64" r="54"
+              fill="none" stroke="var(--gold)" stroke-width="8"
+              stroke-linecap="round"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"
+              style="transition:stroke-dashoffset 1s linear"/>
+          </svg>
+          <div style="position:absolute;text-align:center">
+            <div style="font-size:26px;font-weight:800;color:var(--gold);font-family:'Space Mono',monospace;letter-spacing:1px">
+              ${pad(hrs)}:${pad(mins)}:${pad(secs)}
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">tersisa</div>
+          </div>
+        </div>
+
+        <!-- Lock icon -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+          <button class="btn btn-primary btn-full" disabled
+            style="opacity:0.4;cursor:not-allowed;pointer-events:none">
+            🔒 Watch Ads (Terkunci)
+          </button>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">
+            Tombol akan aktif kembali pukul <b style="color:var(--text)">${new Date(restUntilMs).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})}</b>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--muted);line-height:1.6">
+          💡 Tip: Gunakan waktu istirahat ini untuk cek earnings atau ajak teman bergabung via referral!
+        </div>
+      </div>`;
+  }
+
+  render();
+  _restInterval = setInterval(render, 1000);
 }
 
 // ============================================
@@ -295,6 +392,16 @@ async function claimReward() {
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
   await refreshUser();
+
+  // Kalau claim ini memicu rest period, langsung ke ads dan tampilkan rest screen
+  if (res.rest_until) {
+    setTimeout(() => {
+      nav('ads');
+      showRestScreen(document.getElementById('ads-list'), res.rest_until);
+    }, 1500);
+    return;
+  }
+
   // Load iklan random berikutnya setelah 2 detik
   setTimeout(() => {
     nav('ads');
