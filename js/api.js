@@ -1,7 +1,7 @@
 // ============================================
 // CONFIG — GANTI INI
 // ============================================
-const API_BASE = 'https://circulation-apr-understanding-illustrations.trycloudflare.com'; // ← ganti URL Cloudflare Tunnel lo
+const API_BASE = 'https://rip-texture-toilet-licence.trycloudflare.com'; // ← ganti URL Cloudflare Tunnel lo
 
 // ============================================
 // GLOBAL STATE
