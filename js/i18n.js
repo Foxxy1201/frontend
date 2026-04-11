@@ -65,7 +65,7 @@ const i18n = {
   withdraw_title:      '💸 Withdraw',
   withdraw_bal_lbl:    'Earning Balance',
   withdraw_amount_lbl: 'Withdraw Amount (USDT)',
-  withdraw_amount_ph:  'Minimum 1 USDT',
+  withdraw_amount_ph:  'Minimum 0.1 USDT',
   withdraw_addr_lbl:   'BEP-20 Destination Wallet',
   withdraw_submit:     '💸 Request Withdraw',
   withdraw_history:    'Withdraw History',
