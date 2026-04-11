@@ -543,7 +543,6 @@ function switchDepositTab(tab) {
 let fpConfig = null;
 
 async function loadFaucetPayConfig() {
-  if (fpConfig) return; // already loaded
   const res = await apiGet('/api/deposits/faucetpay/config', { telegram_id: state.telegramId });
   if (res && !res.error) {
     fpConfig = res;
