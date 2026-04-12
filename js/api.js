@@ -1,7 +1,7 @@
 // ============================================
 // CONFIG — GANTI INI
 // ============================================
-const API_BASE = 'https://gasoline-qty-pasta-mental.trycloudflare.com'; // ← ganti URL Cloudflare Tunnel lo
+const API_BASE = 'https://api.cashorbit.my.id'; // ← ganti URL Cloudflare Tunnel lo
 
 // ============================================
 // GLOBAL STATE
