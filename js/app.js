@@ -86,16 +86,17 @@ document.addEventListener('pointerdown', (e) => {
 // NAVIGATION with slide direction
 // ============================================
 const PAGE_MAP = {
-  'dashboard': 'page-dashboard',
-  'ads':       'page-ads',
-  'viewer':    'page-viewer',
-  'deposit':   'page-deposit',
-  'withdraw':  'page-withdraw',
-  'create-ad': 'page-create-ad',
-  'referral':  'page-referral',
-  'my-ads':    'page-my-ads',
+  'dashboard':  'page-dashboard',
+  'ads':        'page-ads',
+  'viewer':     'page-viewer',
+  'deposit':    'page-deposit',
+  'withdraw':   'page-withdraw',
+  'create-ad':  'page-create-ad',
+  'referral':   'page-referral',
+  'my-ads':     'page-my-ads',
+  'tournament': 'page-tournament',
 };
-const NAV_PAGES = ['dashboard', 'ads', 'deposit', 'withdraw', 'referral'];
+const NAV_PAGES = ['dashboard', 'ads', 'deposit', 'withdraw', 'referral', 'tournament'];
 
 // Track current tab index for slide direction
 let _currentNavIndex = 0;
@@ -119,13 +120,14 @@ function nav(page) {
   if (navEl) navEl.classList.add('active');
 
   // Lazy-load page data
-  if (page === 'ads')       loadAds();
-  if (page === 'deposit')   { loadDepositHistory(); updateWdBalance(); loadFaucetPayConfig(); }
-  if (page === 'withdraw')  { loadWithdrawHistory(); updateWdBalance(); }
-  if (page === 'create-ad') updateAdDepBal();
-  if (page === 'referral')  loadReferral();
-  if (page === 'my-ads')    loadMyAds();
-  if (page === 'withdraw')  loadWithdrawMethods();
+  if (page === 'ads')        loadAds();
+  if (page === 'deposit')    { loadDepositHistory(); updateWdBalance(); loadFaucetPayConfig(); }
+  if (page === 'withdraw')   { loadWithdrawHistory(); updateWdBalance(); }
+  if (page === 'create-ad')  updateAdDepBal();
+  if (page === 'referral')   loadReferral();
+  if (page === 'my-ads')     loadMyAds();
+  if (page === 'withdraw')   loadWithdrawMethods();
+  if (page === 'tournament') loadTournament();
 
   window.scrollTo(0, 0);
 }
@@ -961,6 +963,117 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ============================================
+// TOURNAMENT
+// ============================================
+async function loadTournament() {
+  const el = document.getElementById('tournament-content');
+  if (!el) return;
+  el.innerHTML = `<div class="loading"><div class="spinner"></div>Loading...</div>`;
+
+  const res = await apiGet('/api/tournament/current');
+  if (!res || res.error) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">❌</div>Failed to load tournament.</div>`;
+    return;
+  }
+
+  if (!res.tournament) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🏆</div>No active tournament right now.</div>`;
+    return;
+  }
+
+  const t       = res.tournament;
+  const endDate = new Date(t.end_date);
+  const now     = new Date();
+  const diffMs  = endDate - now;
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  const diffHrs  = Math.max(0, Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+
+  const refPrizes = [20, 10, 5, 3, 2];
+  const actPrizes = [5, 4, 3, 2, 1];
+  const medals    = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+  function renderBoard(list, prizeList, scoreLabel) {
+    if (list.length === 0) {
+      return `<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">
+        No participants yet. Be the first! 🔥
+      </div>`;
+    }
+    return list.map((u, i) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+                  background:${i === 0 ? 'rgba(251,191,36,0.08)' : 'var(--surface)'};
+                  border:1px solid ${i === 0 ? 'rgba(251,191,36,0.3)' : 'var(--border)'};
+                  border-radius:10px;margin-bottom:6px">
+        <div style="font-size:22px;width:30px;text-align:center">${medals[i]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            @${u.username}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            ${scoreLabel}: <span style="color:var(--accent)">${u[Object.keys(u).find(k => k.includes('referral') || k.includes('claim'))]}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:14px;font-weight:700;color:var(--gold)">
+            +${prizeList[i]} USDT
+          </div>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  el.innerHTML = `
+    <!-- Timer -->
+    <div style="background:linear-gradient(135deg,rgba(0,229,255,0.1),rgba(168,85,247,0.1));
+                border:1px solid rgba(0,229,255,0.2);border-radius:12px;
+                padding:16px;text-align:center;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
+        🏆 Monthly Tournament · Ends In
+      </div>
+      <div style="font-size:24px;font-weight:700;color:var(--accent);font-family:'Space Mono',monospace">
+        ${diffDays}d ${diffHrs}h
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        ${endDate.toLocaleDateString('en-US', { day:'numeric', month:'long', year:'numeric' })}
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div style="background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.15);
+                border-radius:10px;padding:12px;font-size:12px;color:var(--muted);
+                line-height:1.7;margin-bottom:16px">
+      💡 <b style="color:var(--text)">How to win:</b><br>
+      📢 <b>Referral</b> — Invite the most active users (min. 20 active referrals, each must claim ads ≥5x)<br>
+      👁 <b>Activity</b> — Watch & claim the most ads this month
+    </div>
+
+    <!-- REFERRAL CATEGORY -->
+    <div class="section-title">📢 Referral Category</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:10px 12px;font-size:11px;color:var(--muted);margin-bottom:10px;
+                display:flex;justify-content:space-between">
+      <span>Prize Pool</span>
+      <span style="color:var(--gold);font-weight:700">20+10+5+3+2 = 40 USDT</span>
+    </div>
+    <div id="referral-board">
+      ${renderBoard(res.referral, refPrizes, 'Active Referrals')}
+    </div>
+
+    <!-- ACTIVITY CATEGORY -->
+    <div class="section-title" style="margin-top:20px">👁 Activity Category</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:10px 12px;font-size:11px;color:var(--muted);margin-bottom:10px;
+                display:flex;justify-content:space-between">
+      <span>Prize Pool</span>
+      <span style="color:var(--gold);font-weight:700">5+4+3+2+1 = 15 USDT</span>
+    </div>
+    <div id="activity-board">
+      ${renderBoard(res.activity, actPrizes, 'Total Claims')}
+    </div>
+  `;
 }
 
 // ============================================
