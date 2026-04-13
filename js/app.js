@@ -75,9 +75,9 @@ function playSound(type) {
 
 // Attach tap sound to all buttons globally
 document.addEventListener('pointerdown', (e) => {
-  const btn = e.target.closest('button, .btn, .ad-card, .nav-item, a.viewer-open-btn');
+  const btn = e.target.closest('button, .btn, .ad-card, .drawer-item, a.viewer-open-btn');
   if (btn) {
-    const isNav = btn.classList.contains('nav-item');
+    const isNav = btn.classList.contains('drawer-item');
     playSound(isNav ? 'nav' : 'tap');
   }
 }, { passive: true });
@@ -108,16 +108,12 @@ function nav(page) {
   if (newIndex !== -1) _currentNavIndex = newIndex;
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'slide-from-left'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
   const el = document.getElementById(PAGE_MAP[page]);
   if (el) {
     if (fromLeft) el.classList.add('slide-from-left');
     el.classList.add('active');
   }
-
-  const navEl = document.getElementById(`nav-${page}`);
-  if (navEl) navEl.classList.add('active');
 
   // Lazy-load page data
   if (page === 'ads')        loadAds();
@@ -177,6 +173,7 @@ function updateDashboard() {
   document.getElementById('hdr-username').textContent = '@' + (state.user.username || 'user');
   document.getElementById('earn-bal').textContent = parseFloat(state.user.earning_balance).toFixed(8);
   document.getElementById('dep-bal').textContent  = parseFloat(state.user.deposit_balance).toFixed(8);
+  if (typeof updateDrawerBalance === 'function') updateDrawerBalance();
 }
 
 async function refreshUser() {
