@@ -1167,33 +1167,13 @@ async function claimOrbit() {
   const btnEl   = document.getElementById('orbit-btn');
   const btnText = document.getElementById('orbit-btn-text');
 
-  // Disable tombol dulu
   if (btnEl) { btnEl.disabled = true; btnEl.style.opacity = '0.6'; }
-  if (btnText) btnText.textContent = 'Loading Ad...';
-
-  // Tampilkan iklan AdsgGram dulu
-  try {
-    const AdController = await window.Adsgram.init({ blockId: ORBIT_BLOCK_ID });
-
-    await new Promise((resolve, reject) => {
-      AdController.show()
-        .then(result => {
-          if (result.done) resolve();
-          else reject(new Error('Ad not completed'));
-        })
-        .catch(err => reject(err));
-    });
-  } catch (err) {
-    // User skip/close ad atau error
-    showToast('Watch the full ad to claim reward!', 'error');
-    if (btnEl)   { btnEl.disabled = false; btnEl.style.opacity = '1'; }
-    if (btnText) btnText.textContent = 'Claim Orbit';
-    return;
-  }
-
-  // Ad selesai ditonton — hit backend
   if (btnText) btnText.textContent = 'Claiming...';
 
+  // ADSGRAM DISABLED — waiting for moderation
+  // Will be re-enabled after AdsgGram approves block int-27628
+
+  // Hit backend langsung
   const res = await apiPost('/api/ads/orbit/claim', {
     telegram_id: state.telegramId,
   });
