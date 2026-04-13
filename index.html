@@ -2,15 +2,23 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>PTC Mini App</title>
+  <title>Cash Orbit</title>
 
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-  window.Telegram?.WebApp?.setHeaderColor('#080b18');
-  window.Telegram?.WebApp?.setBackgroundColor('#080b18');
+    const _twa = window.Telegram?.WebApp;
+    if (_twa) {
+      _twa.expand();
+      _twa.setHeaderColor('#050508');
+      _twa.setBackgroundColor('#050508');
+    }
   </script>
   <!-- Security: must run before page renders -->
+  <script src="js/security.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css"/>
   <script src="js/security.js"></script>
 
   <!-- Styles -->
@@ -28,7 +36,7 @@
      ========================================== -->
 <div class="page active" id="page-dashboard">
   <div class="header">
-    <span class="header-title">⚡ PTC App</span>
+    <span class="header-title">⚡ Cash Orbit</span>
     <span class="header-badge" id="hdr-username">@user</span>
     <div style="width:48px"></div>
   </div>
@@ -416,7 +424,7 @@
      ========================================== -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <div class="drawer-title">⚡ Cash Orbit</div>
+    <div class="drawer-title">⚡ Cash <span>Orbit</span></div>
     <div class="drawer-username" id="drawer-username">@user</div>
   </div>
 
