@@ -3,9 +3,7 @@
    Font: Space Mono + Rajdhani
    ============================================ */
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap');
-html {
-  background-color: var(--tg-theme-bg-color, #080b18);
-}
+
 :root {
   --bg:       #080b18;
   --surface:  #0f1428;
