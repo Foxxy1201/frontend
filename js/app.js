@@ -1074,6 +1074,46 @@ async function loadTournament() {
 }
 
 // ============================================
+// DRAWER FUNCTIONS
+// ============================================
+function updateDrawerBalance() {
+  if (!state?.user) return;
+  const earnEl = document.getElementById('drawer-earn-bal');
+  const depEl  = document.getElementById('drawer-dep-bal');
+  const userEl = document.getElementById('drawer-username');
+  if (earnEl) earnEl.textContent = parseFloat(state.user.earning_balance).toFixed(8);
+  if (depEl)  depEl.textContent  = parseFloat(state.user.deposit_balance).toFixed(8);
+  if (userEl) userEl.textContent = '@' + (state.user.username || 'user');
+}
+
+function toggleDrawer() {
+  const drawer  = document.getElementById('drawer');
+  const overlay = document.getElementById('drawer-overlay');
+  const btn     = document.getElementById('burger-btn');
+  const isOpen  = drawer.classList.contains('open');
+  if (isOpen) closeDrawer();
+  else {
+    drawer.classList.add('open');
+    overlay.classList.add('show');
+    btn.classList.add('open');
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('show');
+  document.getElementById('burger-btn').classList.remove('open');
+}
+
+function navDrawer(page) {
+  closeDrawer();
+  nav(page);
+  document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
+  const active = document.getElementById(`dnav-${page}`);
+  if (active) active.classList.add('active');
+}
+
+// ============================================
 // START
 // ============================================
 init();
