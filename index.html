@@ -27,6 +27,7 @@
   <div class="header">
     <span class="header-title">⚡ PTC App</span>
     <span class="header-badge" id="hdr-username">@user</span>
+    <div style="width:48px"></div>
   </div>
 
   <div class="balance-grid">
@@ -394,28 +395,110 @@
 </div>
   
 <!-- ==========================================
-     BOTTOM NAV
+     HAMBURGER BUTTON (fixed top right)
      ========================================== -->
-<nav class="bottom-nav">
-  <button class="nav-item active" id="nav-dashboard" onclick="nav('dashboard')">
-    <span class="nav-icon">🏠</span><span id="nav-home-lbl"></span>
-  </button>
-  <button class="nav-item" id="nav-ads" onclick="nav('ads')">
-    <span class="nav-icon">👁</span><span id="nav-ads-lbl"></span>
-  </button>
-  <button class="nav-item" id="nav-tournament" onclick="nav('tournament')">
-  <span class="nav-icon">🏆</span><span></span>
+<button class="burger-btn" id="burger-btn" onclick="toggleDrawer()">
+  <span class="burger-line"></span>
+  <span class="burger-line"></span>
+  <span class="burger-line"></span>
 </button>
-  <button class="nav-item" id="nav-deposit" onclick="nav('deposit')">
-    <span class="nav-icon">💳</span><span id="nav-deposit-lbl"></span>
-  </button>
-  <button class="nav-item" id="nav-withdraw" onclick="nav('withdraw')">
-    <span class="nav-icon">💸</span><span id="nav-withdraw-lbl"></span>
-  </button>
-  <button class="nav-item" id="nav-referral" onclick="nav('referral')">
-    <span class="nav-icon">🔗</span><span id="nav-referral-lbl"></span>
-  </button>
-</nav>
+
+<!-- ==========================================
+     DRAWER OVERLAY
+     ========================================== -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- ==========================================
+     DRAWER MENU (slide from right)
+     ========================================== -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">⚡ Cash Orbit</div>
+    <div class="drawer-username" id="drawer-username">@user</div>
+  </div>
+
+  <div class="drawer-balance">
+    <div class="drawer-bal-item">
+      <div class="drawer-bal-label">Earning</div>
+      <div class="drawer-bal-val" id="drawer-earn-bal">0.00000000</div>
+    </div>
+    <div class="drawer-bal-item">
+      <div class="drawer-bal-label">Deposit</div>
+      <div class="drawer-bal-val accent2" id="drawer-dep-bal">0.00000000</div>
+    </div>
+  </div>
+
+  <nav class="drawer-nav">
+    <button class="drawer-item active" id="dnav-dashboard" onclick="navDrawer('dashboard')">
+      <span class="drawer-icon">🏠</span><span>Home</span>
+    </button>
+    <button class="drawer-item" id="dnav-ads" onclick="navDrawer('ads')">
+      <span class="drawer-icon">👁</span><span>Watch Ads</span>
+    </button>
+    <button class="drawer-item" id="dnav-tournament" onclick="navDrawer('tournament')">
+      <span class="drawer-icon">🏆</span><span>Tournament</span>
+    </button>
+    <button class="drawer-item" id="dnav-deposit" onclick="navDrawer('deposit')">
+      <span class="drawer-icon">💳</span><span>Deposit</span>
+    </button>
+    <button class="drawer-item" id="dnav-withdraw" onclick="navDrawer('withdraw')">
+      <span class="drawer-icon">💸</span><span>Withdraw</span>
+    </button>
+    <button class="drawer-item" id="dnav-referral" onclick="navDrawer('referral')">
+      <span class="drawer-icon">🔗</span><span>Referral</span>
+    </button>
+    <button class="drawer-item" id="dnav-create-ad" onclick="navDrawer('create-ad')">
+      <span class="drawer-icon">📢</span><span>Post Ad</span>
+    </button>
+    <button class="drawer-item" id="dnav-my-ads" onclick="navDrawer('my-ads')">
+      <span class="drawer-icon">📊</span><span>My Ad Stats</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ==========================================
+     DRAWER JS
+     ========================================== -->
+<script>
+function toggleDrawer() {
+  const drawer  = document.getElementById('drawer');
+  const overlay = document.getElementById('drawer-overlay');
+  const btn     = document.getElementById('burger-btn');
+  const isOpen  = drawer.classList.contains('open');
+  if (isOpen) closeDrawer();
+  else {
+    drawer.classList.add('open');
+    overlay.classList.add('show');
+    btn.classList.add('open');
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('show');
+  document.getElementById('burger-btn').classList.remove('open');
+}
+
+function navDrawer(page) {
+  closeDrawer();
+  nav(page);
+  // Update active state di drawer
+  document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
+  const active = document.getElementById(`dnav-${page}`);
+  if (active) active.classList.add('active');
+}
+
+// Update drawer balance (dipanggil dari updateDashboard)
+function updateDrawerBalance() {
+  if (!state?.user) return;
+  const earnEl = document.getElementById('drawer-earn-bal');
+  const depEl  = document.getElementById('drawer-dep-bal');
+  const userEl = document.getElementById('drawer-username');
+  if (earnEl) earnEl.textContent = parseFloat(state.user.earning_balance).toFixed(8);
+  if (depEl)  depEl.textContent  = parseFloat(state.user.deposit_balance).toFixed(8);
+  if (userEl) userEl.textContent = '@' + (state.user.username || 'user');
+}
+</script>
 
 <!-- ==========================================
      SCRIPTS (order matters)
