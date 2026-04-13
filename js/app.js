@@ -184,6 +184,9 @@ function updateDashboard() {
   if (de) de.textContent = earn;
   if (dd) dd.textContent = dep;
   if (du) du.textContent = uname;
+
+  // Load orbit status
+  loadOrbitStatus();
 }
 
 async function refreshUser() {
@@ -1081,6 +1084,147 @@ async function loadTournament() {
       ${renderBoard(res.activity, actPrizes, 'Total Claims')}
     </div>
   `;
+}
+
+// ============================================
+// CLAIM ORBIT — AdsgGram integration
+// ============================================
+const ORBIT_BLOCK_ID    = 'int-27628';
+const ORBIT_COOLDOWN_MS = 5 * 60 * 1000;
+let _orbitTimer         = null;
+let _orbitNextClaimAt   = null;
+
+async function loadOrbitStatus() {
+  const res = await apiGet('/api/ads/orbit/status', { telegram_id: state.telegramId });
+  if (!res) return;
+
+  const pct     = Math.min(100, Math.round((res.claims_today / res.daily_limit) * 100));
+  const countEl = document.getElementById('orbit-count-lbl');
+  const barEl   = document.getElementById('orbit-progress-bar');
+  const btnEl   = document.getElementById('orbit-btn');
+  const timerEl = document.getElementById('orbit-timer-lbl');
+
+  if (countEl) countEl.textContent = `${res.claims_today} / ${res.daily_limit} today`;
+  if (barEl)   barEl.style.width   = pct + '%';
+
+  if (res.claims_today >= res.daily_limit) {
+    // Daily limit reached
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.style.opacity = '0.45';
+      btnEl.style.cursor  = 'not-allowed';
+    }
+    document.getElementById('orbit-btn-text').textContent = 'Daily Limit Reached';
+    if (timerEl) timerEl.textContent = 'Come back tomorrow!';
+    return;
+  }
+
+  if (!res.can_claim && res.next_claim_at) {
+    _orbitNextClaimAt = res.next_claim_at;
+    startOrbitCountdown();
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.style.opacity = '0.5';
+    }
+  } else {
+    _orbitNextClaimAt = null;
+    if (_orbitTimer) { clearInterval(_orbitTimer); _orbitTimer = null; }
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.style.opacity = '1';
+      btnEl.style.cursor  = 'pointer';
+    }
+    document.getElementById('orbit-btn-text').textContent = 'Claim Orbit';
+    if (timerEl) timerEl.textContent = 'Ready!';
+  }
+}
+
+function startOrbitCountdown() {
+  if (_orbitTimer) clearInterval(_orbitTimer);
+  const timerEl = document.getElementById('orbit-timer-lbl');
+  const btnText = document.getElementById('orbit-btn-text');
+  const btnEl   = document.getElementById('orbit-btn');
+
+  _orbitTimer = setInterval(() => {
+    const remaining = _orbitNextClaimAt - Date.now();
+    if (remaining <= 0) {
+      clearInterval(_orbitTimer);
+      _orbitTimer = null;
+      if (timerEl) timerEl.textContent = 'Ready!';
+      if (btnText) btnText.textContent  = 'Claim Orbit';
+      if (btnEl)   { btnEl.disabled = false; btnEl.style.opacity = '1'; }
+      return;
+    }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    const pad  = n => String(n).padStart(2, '0');
+    if (timerEl) timerEl.textContent = `${pad(mins)}:${pad(secs)}`;
+    if (btnText) btnText.textContent  = `Wait ${pad(mins)}:${pad(secs)}`;
+  }, 500);
+}
+
+async function claimOrbit() {
+  const btnEl   = document.getElementById('orbit-btn');
+  const btnText = document.getElementById('orbit-btn-text');
+
+  // Disable tombol dulu
+  if (btnEl) { btnEl.disabled = true; btnEl.style.opacity = '0.6'; }
+  if (btnText) btnText.textContent = 'Loading Ad...';
+
+  // Tampilkan iklan AdsgGram dulu
+  try {
+    const AdController = await window.Adsgram.init({ blockId: ORBIT_BLOCK_ID });
+
+    await new Promise((resolve, reject) => {
+      AdController.show()
+        .then(result => {
+          if (result.done) resolve();
+          else reject(new Error('Ad not completed'));
+        })
+        .catch(err => reject(err));
+    });
+  } catch (err) {
+    // User skip/close ad atau error
+    showToast('Watch the full ad to claim reward!', 'error');
+    if (btnEl)   { btnEl.disabled = false; btnEl.style.opacity = '1'; }
+    if (btnText) btnText.textContent = 'Claim Orbit';
+    return;
+  }
+
+  // Ad selesai ditonton — hit backend
+  if (btnText) btnText.textContent = 'Claiming...';
+
+  const res = await apiPost('/api/ads/orbit/claim', {
+    telegram_id: state.telegramId,
+  });
+
+  if (!res || res.error) {
+    showToast(res?.error || 'Failed to claim.', 'error');
+    if (btnEl)   { btnEl.disabled = false; btnEl.style.opacity = '1'; }
+    if (btnText) btnText.textContent = 'Claim Orbit';
+    return;
+  }
+
+  // Sukses!
+  showToast(`+${parseFloat(res.reward).toFixed(8)} USDT claimed! 🪐`, 'success');
+  playSound('claim');
+  if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+  // Update balance
+  await refreshUser();
+
+  // Set cooldown
+  _orbitNextClaimAt = Date.now() + ORBIT_COOLDOWN_MS;
+  startOrbitCountdown();
+  if (btnEl) { btnEl.disabled = true; btnEl.style.opacity = '0.5'; }
+
+  // Update progress
+  const claims = res.claims_today;
+  const pct    = Math.min(100, Math.round((claims / res.daily_limit) * 100));
+  const countEl = document.getElementById('orbit-count-lbl');
+  const barEl   = document.getElementById('orbit-progress-bar');
+  if (countEl) countEl.textContent = `${claims} / ${res.daily_limit} today`;
+  if (barEl)   barEl.style.width   = pct + '%';
 }
 
 // ============================================
