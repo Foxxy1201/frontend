@@ -2,24 +2,19 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Cash Orbit</title>
+  <title>PTC Mini App</title>
 
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    const _twa = window.Telegram?.WebApp;
-    if (_twa) {
-      _twa.expand();
-      _twa.setHeaderColor('#050508');
-      _twa.setBackgroundColor('#050508');
-    }
+  window.Telegram?.WebApp?.setHeaderColor('#080b18');
+  window.Telegram?.WebApp?.setBackgroundColor('#080b18');
   </script>
   <!-- Security: must run before page renders -->
   <script src="js/security.js"></script>
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css"/>
-  <script src="js/security.js"></script>
+  <!-- AdsgGram SDK -->
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/styles.css"/>
@@ -36,7 +31,7 @@
      ========================================== -->
 <div class="page active" id="page-dashboard">
   <div class="header">
-    <span class="header-title">⚡ Cash Orbit</span>
+    <span class="header-title">⚡ PTC App</span>
     <span class="header-badge" id="hdr-username">@user</span>
     <div style="width:48px"></div>
   </div>
@@ -71,6 +66,32 @@
 
   <div class="section">
     <div class="section-title" id="quick-actions-title">Quick Actions</div>
+
+    <!-- CLAIM ORBIT -->
+    <div id="orbit-container" style="margin-bottom:10px">
+      <button class="btn btn-full" id="orbit-btn" onclick="claimOrbit()"
+        style="background:linear-gradient(135deg,#00f5ff,#bf5af2);color:#000;font-weight:800;font-size:15px;position:relative;overflow:hidden">
+        <span style="font-size:18px">🪐</span>&nbsp;
+        <span id="orbit-btn-text">Claim Orbit</span>
+        <span id="orbit-reward-badge"
+          style="position:absolute;top:6px;right:10px;font-size:10px;font-weight:700;
+                 background:rgba(0,0,0,0.25);padding:2px 7px;border-radius:20px;letter-spacing:0.5px">
+          +0.0005 USDT
+        </span>
+      </button>
+      <!-- Progress bar + countdown -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding:0 2px">
+        <div style="font-size:10px;color:var(--text-3)" id="orbit-count-lbl">0 / 50 today</div>
+        <div style="font-size:10px;color:var(--cyan);font-family:'JetBrains Mono',monospace" id="orbit-timer-lbl"></div>
+      </div>
+      <div style="background:var(--glass-border);border-radius:4px;height:3px;margin-top:4px;overflow:hidden">
+        <div id="orbit-progress-bar"
+          style="height:100%;width:0%;border-radius:4px;
+                 background:linear-gradient(90deg,#00f5ff,#bf5af2);
+                 transition:width 0.4s ease"></div>
+      </div>
+    </div>
+
     <button class="btn btn-purple btn-full" style="margin-bottom:8px" onclick="nav('create-ad')">
       <span class="btn-icon">📢</span>&nbsp;
       <span id="btn-post-ad-text">Post Ad</span>
@@ -424,7 +445,7 @@
      ========================================== -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <div class="drawer-title">⚡ Cash <span>Orbit</span></div>
+    <div class="drawer-title">⚡ Cash Orbit</div>
     <div class="drawer-username" id="drawer-username">@user</div>
   </div>
 
