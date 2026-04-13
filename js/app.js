@@ -170,10 +170,20 @@ async function init() {
 // ============================================
 function updateDashboard() {
   if (!state.user) return;
-  document.getElementById('hdr-username').textContent = '@' + (state.user.username || 'user');
-  document.getElementById('earn-bal').textContent = parseFloat(state.user.earning_balance).toFixed(8);
-  document.getElementById('dep-bal').textContent  = parseFloat(state.user.deposit_balance).toFixed(8);
-  if (typeof updateDrawerBalance === 'function') updateDrawerBalance();
+  const earn  = parseFloat(state.user.earning_balance).toFixed(8);
+  const dep   = parseFloat(state.user.deposit_balance).toFixed(8);
+  const uname = '@' + (state.user.username || 'user');
+
+  document.getElementById('hdr-username').textContent = uname;
+  document.getElementById('earn-bal').textContent = earn;
+  document.getElementById('dep-bal').textContent  = dep;
+
+  const de = document.getElementById('drawer-earn-bal');
+  const dd = document.getElementById('drawer-dep-bal');
+  const du = document.getElementById('drawer-username');
+  if (de) de.textContent = earn;
+  if (dd) dd.textContent = dep;
+  if (du) du.textContent = uname;
 }
 
 async function refreshUser() {
